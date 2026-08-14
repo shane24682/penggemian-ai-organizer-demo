@@ -6,9 +6,10 @@ import { matchUsers } from "../lib/matching";
 import { searchActivities } from "../lib/discovery";
 import { campusLocations, Coordinate, recommendVenues } from "../lib/location";
 import { copyForDingTalk, downloadIcs } from "../lib/calendar";
+import { friendDirectory, searchFriends } from "../lib/friends";
 
 type Step = 1 | 2 | 3 | 4;
-type View = "home" | "match" | "plaza" | "quiz" | "history" | "partners" | "business";
+type View = "home" | "match" | "plaza" | "quiz" | "friends" | "history" | "partners" | "business";
 
 type Activity = {
   name: string;
@@ -142,6 +143,10 @@ export default function Home() {
   const [selectedVenueId, setSelectedVenueId] = useState("");
   const [venueFeeIncluded, setVenueFeeIncluded] = useState(true);
   const [history, setHistory] = useState<HistoryRecord[]>([]);
+  const [friendQuery, setFriendQuery] = useState("");
+  const [friendIds, setFriendIds] = useState<string[]>([]);
+  const [outgoingFriendIds, setOutgoingFriendIds] = useState<string[]>([]);
+  const [incomingFriendIds, setIncomingFriendIds] = useState<string[]>(["PG52020"]);
   const progress = useMemo(() => (step / 4) * 100, [step]);
 
   useEffect(() => {
@@ -149,6 +154,9 @@ export default function Home() {
       try {
         setHistory(JSON.parse(localStorage.getItem("penggemian-history") || "[]"));
         setCustomActivities(JSON.parse(localStorage.getItem("penggemian-custom-activities") || "[]"));
+        setFriendIds(JSON.parse(localStorage.getItem("penggemian-friends") || "[]"));
+        setOutgoingFriendIds(JSON.parse(localStorage.getItem("penggemian-friend-outgoing") || "[]"));
+        setIncomingFriendIds(JSON.parse(localStorage.getItem("penggemian-friend-incoming") || '["PG52020"]'));
         const savedLocation = JSON.parse(localStorage.getItem("penggemian-location") || "null");
         if (savedLocation?.lat && savedLocation?.lng) setUserLocation(savedLocation);
       } catch { /* damaged local demo data falls back to defaults */ }
@@ -158,6 +166,9 @@ export default function Home() {
 
   const allActivities = useMemo(() => [...customActivities, ...activities], [customActivities]);
   const searchResults = useMemo(() => searchActivities(searchQuery, allActivities), [searchQuery, allActivities]);
+  const friendResults = useMemo(() => searchFriends(friendQuery), [friendQuery]);
+  const friends = useMemo(() => friendDirectory.filter(profile => friendIds.includes(profile.id)), [friendIds]);
+  const incomingFriends = useMemo(() => friendDirectory.filter(profile => incomingFriendIds.includes(profile.id)), [incomingFriendIds]);
 
   const quizReport = useMemo(() => {
     const scores: Record<string, number> = {};
@@ -292,6 +303,31 @@ export default function Home() {
     notify("日程已复制；钉钉直连需组织管理员授权日历接口");
   };
 
+  const sendFriendRequest = (id: string) => {
+    if (friendIds.includes(id) || outgoingFriendIds.includes(id)) return;
+    const updated = [...outgoingFriendIds, id];
+    setOutgoingFriendIds(updated);
+    localStorage.setItem("penggemian-friend-outgoing", JSON.stringify(updated));
+    notify("好友申请已发送");
+  };
+
+  const acceptFriendRequest = (id: string) => {
+    const nextFriends = Array.from(new Set([...friendIds, id]));
+    const nextIncoming = incomingFriendIds.filter(friendId => friendId !== id);
+    setFriendIds(nextFriends);
+    setIncomingFriendIds(nextIncoming);
+    localStorage.setItem("penggemian-friends", JSON.stringify(nextFriends));
+    localStorage.setItem("penggemian-friend-incoming", JSON.stringify(nextIncoming));
+    notify("已添加为好友");
+  };
+
+  const ignoreFriendRequest = (id: string) => {
+    const updated = incomingFriendIds.filter(friendId => friendId !== id);
+    setIncomingFriendIds(updated);
+    localStorage.setItem("penggemian-friend-incoming", JSON.stringify(updated));
+    notify("已忽略这条申请");
+  };
+
   const finishPreferences = () => {
     setPreferences(preferenceDraft);
     setCategory("推荐");
@@ -317,7 +353,7 @@ export default function Home() {
 
   const navItems: Array<[View, string, string]> = [
     ["home", "⌂", "首页"], ["match", "✦", "开始匹配"],
-    ["plaza", "◫", "活动广场"], ["quiz", "◇", "兴趣测试"], ["history", "↺", "活动记录"], ["partners", "♧", "组织"],
+    ["plaza", "◫", "活动广场"], ["quiz", "◇", "兴趣测试"], ["friends", "◎", "好友"], ["history", "↺", "活动记录"], ["partners", "♧", "组织"],
   ];
 
   return <main>
@@ -382,6 +418,8 @@ export default function Home() {
           {view === "business" && <div className="workspace-view embedded-view business-view"><div className="view-heading"><div><span>FOR BRAND & VENUE</span><h2>品牌合作</h2><p>按真实到场、商品体验与成交结果获得校园增长。</p></div></div><div className="business-dashboard"><div><h3>每次成局，都是一次真实消费。</h3><p>席位、场地、物资与天猫商品在同一订单链路中完成。</p><div className="stats"><div><b>同校</b><span>身份已核验</span></div><div><b>守约率</b><span>活动后沉淀</span></div><div><b>全链路</b><span>报名至核销</span></div></div><button onClick={()=>notify("合作方案：按到场、核销或成交结算")}>查看合作方案 →</button></div><div className="funnel-card"><div className="funnel-head"><div><span className="brand-dot">N</span><div><b>运动品牌校园体验局</b><p>演示数据 · 杭州 · 5所高校</p></div></div><em>模拟看板</em></div><div className="metric-row"><div><span>活动场次</span><b>24</b></div><div><span>真实到场</span><b>386</b></div><div><span>天猫成交</span><b>¥28.6k</b></div></div><div className="bars"><span style={{height:"48%"}}/><span style={{height:"68%"}}/><span style={{height:"60%"}}/><span style={{height:"87%"}}/><span style={{height:"72%"}}/><span style={{height:"94%"}}/></div></div></div></div>}
 
           {view === "history" && <div className="workspace-view embedded-view history-view"><div className="view-heading"><div><span>MY ACTIVITY LEDGER</span><h2>过往活动记录</h2><p>这里读取的是你在当前 Demo 中真实完成的成局记录，不是预置展示卡片。</p></div><b>{history.length}<small>条本机记录</small></b></div>{history.length?<div className="history-list">{history.map(record=><article key={record.id}><div className="history-icon">✓</div><div><span>{new Date(record.createdAt).toLocaleString("zh-CN")}</span><h3>{record.activity}</h3><p>{record.time} · {record.venue}</p></div><div className="history-meta"><b>¥{record.price}</b><em>{record.status}</em><small>{record.calendarAdded?"已导入日历":"未导入日历"}</small></div><button onClick={()=>openMatch(record.activity)}>再次发起 →</button></article>)}</div>:<div className="history-empty"><span>↺</span><h3>还没有真实活动记录</h3><p>完成一次“确认并购买席位”的 Demo 流程后，记录会立即写入并可在这里查询。</p><button onClick={()=>openMatch()}>开始第一次匹配 →</button></div>}<div className="storage-note"><b>记录机制</b><p>当前版本未要求登录，因此记录保存在本设备浏览器中；接入校园账号后可替换为云端数据库，实现跨设备查询。</p></div></div>}
+
+          {view === "friends" && <div className="workspace-view embedded-view friends-view"><div className="view-heading"><div><span>CAMPUS FRIEND NETWORK</span><h2>好友</h2><p>按碰个面 ID 或昵称找到同校同学，发出好友申请。</p></div><b>{friends.length}<small>位本机好友</small></b></div><div className="friend-identity"><div><span>Y</span><div><small>我的碰个面 ID</small><b>PG20260814</b><p>杭城大学 · 已完成校园身份认证</p></div></div><button onClick={async()=>{await navigator.clipboard.writeText("PG20260814");notify("我的好友 ID 已复制")}}>复制 ID</button></div><div className="friend-layout"><section className="friend-discovery"><div className="friend-search"><span>⌕</span><input autoFocus value={friendQuery} onChange={event=>setFriendQuery(event.target.value)} placeholder="搜索好友 ID 或昵称，例如 PG10086、林一帆"/><button onClick={()=>setFriendQuery(friendQuery.trim())}>搜索</button></div><div className="friend-result-head"><b>{friendQuery.trim()?`“${friendQuery}”的搜索结果`:"可能认识的同学"}</b><span>{friendResults.length} 人</span></div>{friendResults.length?<div className="friend-results">{friendResults.map(profile=>{const isFriend=friendIds.includes(profile.id);const isOutgoing=outgoingFriendIds.includes(profile.id);const isIncoming=incomingFriendIds.includes(profile.id);return <article key={profile.id}><span className="friend-avatar">{profile.avatar}</span><div className="friend-copy"><div><h3>{profile.nickname}</h3><em>{profile.id}</em></div><p>{profile.school} · {profile.grade} · {profile.major}</p><div>{profile.tags.map(tag=><small key={tag}>{tag}</small>)}</div><i>{profile.mutual?`${profile.mutual} 位共同好友 · `:""}{profile.lastActive}</i></div>{isFriend?<button className="friend-state" disabled>已是好友</button>:isIncoming?<button className="friend-accept" onClick={()=>acceptFriendRequest(profile.id)}>同意申请</button>:isOutgoing?<button className="friend-state" disabled>等待通过</button>:<button className="friend-add" onClick={()=>sendFriendRequest(profile.id)}>＋ 添加好友</button>}</article>})}</div>:<div className="friend-empty"><span>⌕</span><h3>没有找到这个用户</h3><p>请检查完整 ID 或昵称是否正确；校园身份未完成的用户不会出现在搜索结果中。</p></div>}</section><aside className="friend-side">{incomingFriends.length>0&&<div className="friend-panel"><div className="friend-panel-title"><b>新的好友申请</b><span>{incomingFriends.length}</span></div>{incomingFriends.map(profile=><div className="friend-request" key={profile.id}><span>{profile.avatar}</span><div><b>{profile.nickname}</b><p>{profile.id} · {profile.school}</p></div><button onClick={()=>acceptFriendRequest(profile.id)}>同意</button><button onClick={()=>ignoreFriendRequest(profile.id)}>忽略</button></div>)}</div>}<div className="friend-panel"><div className="friend-panel-title"><b>我的好友</b><span>{friends.length}</span></div>{friends.length?friends.map(profile=><button className="friend-row" key={profile.id} onClick={()=>notify(`已打开与 ${profile.nickname} 的聊天 Demo`)}><span>{profile.avatar}</span><div><b>{profile.nickname}</b><p>{profile.lastActive}</p></div><em>聊天 →</em></button>):<div className="friend-side-empty"><span>◎</span><p>添加的好友会出现在这里</p></div>}</div><div className="friend-storage-note"><b>Demo 数据说明</b><p>搜索来自演示同校用户目录；申请与好友关系真实保存在当前设备。正式上线需接入登录、好友关系数据库与消息服务。</p></div></aside></div></div>}
         </div>
       </div>
     </section>
