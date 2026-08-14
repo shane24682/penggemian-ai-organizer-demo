@@ -5,20 +5,65 @@ import { useMemo, useState } from "react";
 type Step = 1 | 2 | 3 | 4;
 type View = "home" | "match" | "plaza" | "partners" | "business";
 
-const activities = [
-  ["摄影入门", "兴趣技能", "摄", "零基础带拍 · 作品点评", "6人 · ¥29"],
-  ["一起看电影", "轻娱乐", "影", "选片投票 · 映后聊天", "8人 · ¥25"],
-  ["桌游组局", "轻娱乐", "桌", "规则教学 · 自动凑桌", "6人 · ¥35"],
-  ["台球新手局", "运动", "台", "同水平匹配 · 球桌预订", "4人 · ¥22"],
-  ["羽毛球", "运动", "羽", "水平分层 · 场地用球", "6人 · ¥18"],
-  ["篮球半场", "运动", "篮", "位置匹配 · 自动补位", "10人 · ¥12"],
-  ["乐器合奏", "社团兴趣", "乐", "曲目与声部匹配", "5人 · 免费"],
-  ["舞蹈体验", "社团兴趣", "舞", "零基础教学 · 镜房", "12人 · ¥19"],
-  ["城市漫游", "探索", "走", "白天路线 · 真人领队", "8人 · ¥15"],
-  ["读书会", "学习", "书", "共读章节 · 主题讨论", "8人 · 免费"],
-  ["英语口语角", "学习", "EN", "同水平话题 · 固定复组", "10人 · 免费"],
-  ["飞盘体验", "运动", "飞", "规则教学 · 装备用品", "12人 · ¥16"],
+type Activity = {
+  name: string;
+  category: string;
+  group: string;
+  icon: string;
+  note: string;
+  meta: string;
+  featured: boolean;
+};
+
+const featuredActivities = new Set([
+  "羽毛球双打", "飞盘争夺赛", "校园夜跑打卡", "攀岩抱石",
+  "密室逃脱", "Switch派对游戏", "台球斯诺克", "城市街拍约拍",
+  "乐队合奏", "陶艺拉坯", "外语角", "圆桌读书会",
+  "天文台观星", "Citywalk人文历史路线", "露营烧烤",
+]);
+
+const activityGroup = (
+  category: string,
+  group: string,
+  icon: string,
+  note: string,
+  meta: string,
+  names: string[],
+): Activity[] => names.map(name => ({
+  name, category, group, icon, note, meta, featured: featuredActivities.has(name),
+}));
+
+const activities: Activity[] = [
+  ...activityGroup("运动", "球类运动", "球", "同水平匹配 · 场地与规则确认", "4–12人 · 本校可发起", ["篮球3V3", "羽毛球双打", "乒乓球擂台赛", "网球对拉", "排球沙地赛"]),
+  ...activityGroup("运动", "潮流新宠", "潮", "新手教学 · 装备与分队安排", "8–16人 · 新手友好", ["飞盘争夺赛", "腰旗橄榄球", "匹克球体验", "攻防箭"]),
+  ...activityGroup("运动", "户外耐力", "跑", "路线规划 · 配速分组与安全提醒", "6–20人 · 领队带队", ["校园夜跑打卡", "环湖骑行", "登山徒步", "城市定向越野"]),
+  ...activityGroup("运动", "室内燃脂", "燃", "场馆预约 · 教练与护具确认", "6–12人 · 可拼团", ["攀岩抱石", "蹦床公园", "室内滑冰", "搏击操团课"]),
+
+  ...activityGroup("轻娱乐", "沉浸推理", "谜", "主题投票 · 角色与场次匹配", "5–10人 · 商家供给", ["密室逃脱", "剧本杀", "实景搜证"]),
+  ...activityGroup("轻娱乐", "桌游聚会", "桌", "规则教学 · 自动凑桌", "4–10人 · 新手友好", ["狼人杀", "阿瓦隆", "三国杀", "大富翁现金流", "德国心脏病"]),
+  ...activityGroup("轻娱乐", "电子竞技", "游", "设备与游戏确认 · 自动补位", "2–10人 · 可开黑", ["Switch派对游戏", "PS5双人成行", "网吧5V5开黑"]),
+  ...activityGroup("轻娱乐", "新奇体验", "趣", "场地预约 · 费用提前确认", "2–8人 · 可拼场", ["VR虚拟对战", "射箭", "飞镖", "保龄球", "台球斯诺克"]),
+
+  ...activityGroup("兴趣技能", "视觉艺术", "影", "作品目标匹配 · 社团或同伴带练", "4–8人 · 可交作品", ["城市街拍约拍", "胶片暗房体验", "手机短视频剪辑", "Vlog创作"]),
+  ...activityGroup("兴趣技能", "乐器声乐", "乐", "曲目与声部匹配 · 排练室预约", "4–12人 · 社团带练", ["乐队合奏", "阿卡贝拉无伴奏合唱", "尤克里里速成课"]),
+  ...activityGroup("兴趣技能", "手工DIY", "作", "材料包预订 · 老师或社团教学", "4–10人 · 材料可团购", ["陶艺拉坯", "奶油胶手机壳", "流体熊", "拼豆豆", "微缩景观造景"]),
+  ...activityGroup("兴趣技能", "生活美学", "美", "门店预约 · 原料与成品确认", "4–8人 · 体验课", ["咖啡拉花体验", "烘焙蛋糕饼干", "调酒入门", "插花与多肉种植"]),
+
+  ...activityGroup("社团社交", "文化体验", "文", "同好匹配 · 服装与拍摄协作", "6–20人 · 社团可承办", ["汉服出行日", "JK茶会", "Lolita茶会", "动漫Cosplay外拍"]),
+  ...activityGroup("社团社交", "语言交流", "语", "语言水平匹配 · 话题卡辅助", "6–16人 · 固定复组", ["外语角", "方言趣味教学"]),
+  ...activityGroup("社团社交", "生活观察", "校", "校内路线 · 轻社交任务设计", "6–20人 · 校园限定", ["校园猫猫图鉴拍摄", "深夜夜聊茶话会", "闲置物品交换市集"]),
+  ...activityGroup("社团社交", "竞技观赛", "赛", "赛事排期 · 场地与座位预约", "6–30人 · 可组观赛局", ["电竞赛事集体观赛", "体育球赛集体观赛", "网吧多排开黑"]),
+
+  ...activityGroup("学习充电", "思维碰撞", "思", "主题与观点匹配 · 主持流程生成", "6–20人 · 校园讨论", ["奇葩说式辩论赛", "TEDx观影会", "圆桌读书会"]),
+  ...activityGroup("学习充电", "技能实战", "技", "目标诊断 · 模板与同伴反馈", "4–12人 · 可带作品", ["PPT设计工坊", "简历诊断所", "模拟面试官"]),
+  ...activityGroup("学习充电", "实验室探秘", "研", "机构预约 · 名额与安全须知", "6–20人 · 校内资源", ["参观科研大棚", "天文台观星", "动植物标本制作"]),
+
+  ...activityGroup("户外探索", "城市猎人", "城", "路线生成 · 兴趣点与节奏匹配", "6–12人 · 白天成团", ["Citywalk人文历史路线", "美食探店路线", "寻找城市地标打卡"]),
+  ...activityGroup("户外探索", "自然野趣", "野", "装备清单 · 天气与安全提醒", "6–16人 · 真人领队", ["露营烧烤", "篝火晚会", "钓鱼捞虾", "油菜花田写生"]),
+  ...activityGroup("户外探索", "极限挑战", "极", "资质商家 · 保险与风险确认", "4–10人 · 审核后开放", ["室内冲浪", "滑板刷街", "周边游蹦极或跳伞体验"]),
 ];
+
+const plazaCategories = ["推荐", "运动", "轻娱乐", "兴趣技能", "社团社交", "学习充电", "户外探索"];
 
 const people = [
   ["林小满", "大三 · 入门对打", "守约 98%", "林"],
@@ -44,7 +89,7 @@ export default function Home() {
   const [level, setLevel] = useState("新手友好");
   const [seats, setSeats] = useState(6);
   const [answer, setAnswer] = useState("提前4小时可取消");
-  const [category, setCategory] = useState("全部");
+  const [category, setCategory] = useState("推荐");
   const [partner, setPartner] = useState("学生社团");
   const [toast, setToast] = useState("");
   const progress = useMemo(() => (step / 4) * 100, [step]);
@@ -107,14 +152,19 @@ export default function Home() {
               <aside>{[[1,"告诉AI"],[2,"确认偏好"],[3,"匹配结果"],[4,"成局成功"]].map(([n,label])=><button key={n} className={step===n?"active":step>n?"done":""} onClick={()=>setStep(n as Step)}><span>{step>n?"✓":n}</span>{label}</button>)}<div className="agent-info"><span className="ai-avatar">碰</span><div><b>AI主理人正在工作</b><p>已为你节省约 42 分钟沟通</p></div></div></aside>
               <div className="demo-content">
                 {step===1&&<div className="panel enter-panel"><span className="panel-tag">STEP 01</span><h3>你想和同学一起做什么？</h3><p>不用填写复杂表单，一句话就够了。</p><div className="idea-input"><span>✦</span><textarea value={`这周六下午想${activityCopy[activity]||`参加${activity}`}，希望规则和费用提前说清楚。`} readOnly/><button onClick={()=>setStep(2)}>交给 AI 安排 →</button></div><div className="ideas"><span>换个想法：</span>{["摄影入门","一起看电影","桌游组局","台球新手局"].map(x=><button className={activity===x?"selected":""} key={x} onClick={()=>setActivity(x)}>{x}</button>)}</div></div>}
-                {step===2&&<div className="panel preference-panel"><span className="panel-tag">STEP 02</span><h3>我理解得对吗？</h3><p>确认真正影响成局的硬条件。</p><div className="form-grid"><label>活动主题<select value={activity} onChange={e=>setActivity(e.target.value)}>{activities.map(x=><option key={x[0]}>{x[0]}</option>)}</select></label><label>时间<select value={time} onChange={e=>setTime(e.target.value)}><option>周六 15:00</option><option>周六 19:00</option><option>周日 10:00</option></select></label><label>水平 / 目标<select value={level} onChange={e=>setLevel(e.target.value)}><option>新手友好</option><option>同水平参与</option><option>固定互相监督</option></select></label><label>理想人数<div className="stepper"><button onClick={()=>setSeats(Math.max(4,seats-1))}>−</button><b>{seats} 人</b><button onClick={()=>setSeats(Math.min(10,seats+1))}>＋</button></div></label></div><div className="question"><b>把活动规则先说清楚</b><p>选择最重要的一条约定</p><div>{["提前4小时可取消","各自AA，不代付","不强社交，按时结束"].map(x=><button key={x} className={answer===x?"selected":""} onClick={()=>setAnswer(x)}>{x}</button>)}</div></div><button className="wide-button" onClick={()=>setStep(3)}>开始智能匹配 <span>预计 8 秒</span></button></div>}
+                {step===2&&<div className="panel preference-panel"><span className="panel-tag">STEP 02</span><h3>我理解得对吗？</h3><p>确认真正影响成局的硬条件。</p><div className="form-grid"><label>活动主题<select value={activity} onChange={e=>setActivity(e.target.value)}>{activities.map(x=><option key={x.name}>{x.name}</option>)}</select></label><label>时间<select value={time} onChange={e=>setTime(e.target.value)}><option>周六 15:00</option><option>周六 19:00</option><option>周日 10:00</option></select></label><label>水平 / 目标<select value={level} onChange={e=>setLevel(e.target.value)}><option>新手友好</option><option>同水平参与</option><option>固定互相监督</option></select></label><label>理想人数<div className="stepper"><button onClick={()=>setSeats(Math.max(4,seats-1))}>−</button><b>{seats} 人</b><button onClick={()=>setSeats(Math.min(10,seats+1))}>＋</button></div></label></div><div className="question"><b>把活动规则先说清楚</b><p>选择最重要的一条约定</p><div>{["提前4小时可取消","各自AA，不代付","不强社交，按时结束"].map(x=><button key={x} className={answer===x?"selected":""} onClick={()=>setAnswer(x)}>{x}</button>)}</div></div><button className="wide-button" onClick={()=>setStep(3)}>开始智能匹配 <span>预计 8 秒</span></button></div>}
                 {step===3&&<div className="panel result-panel"><span className="panel-tag success">规则已确认 · 同校成员已核验</span><div className="result-title"><div><h3>{level}{activity}局</h3><p>{time} · 校内合作场地 · {seats}人小组</p></div><span className="price">¥18<small>/席</small></span></div><div className="people-grid">{people.slice(0,seats-1).map((p,i)=><div className="person" key={p[0]}><span className={`portrait p${i}`}>{p[3]}</span><div><b>{p[0]}</b><p>{p[1]}</p></div><em>{p[2]}</em></div>)}</div><div className="captain"><span>队</span><div><b>真人队长：阿野</b><p>已带队 23 场 · 评分 4.9</p></div><em>身份已认证</em></div><div className="included"><b>席位包含</b><span>✓ 场地</span><span>✓ 水平分组</span><span>✓ AI提醒及候补</span></div><button className="wide-button pay" onClick={()=>setStep(4)}>确认并购买席位 · ¥18 <span>模拟支付 →</span></button><p className="fine-print">Demo不会产生真实扣款</p></div>}
                 {step===4&&<div className="panel done-panel"><div className="checkmark">✓</div><span className="panel-tag success">已成功占座</span><h3>这一局，交给我们。</h3><p>AI主理人会处理确认、补位与提醒。</p><div className="ticket"><div className="ticket-main"><span className="sport-icon">碰</span><div><b>{level}{activity}局</b><p>{time} · 校内合作场地</p></div><strong>{seats}/{seats}<br/><small>已成局</small></strong></div><div className="ticket-code"><div className="fake-qr">▦</div><div><b>签到码 2861</b><p>活动前30分钟开放</p></div><button onClick={()=>notify("活动已加入日历")}>加入日历</button></div></div><div className="next-actions"><button onClick={()=>notify("邀请链接已复制")}>邀请同学</button><button onClick={()=>openMatch()}>再开一局</button></div></div>}
               </div>
             </div>
           </div>}
 
-          {view === "plaza" && <div className="workspace-view embedded-view plaza-view"><div className="view-heading"><div><span>CAMPUS ACTIVITY PLAZA</span><h2>活动广场</h2><p>从第一次学摄影到乐队合奏，选择一个想参加的活动。</p></div></div><div className="category-tabs">{["全部","运动","轻娱乐","兴趣技能","社团兴趣","学习","探索"].map(x=><button key={x} className={category===x?"active":""} onClick={()=>setCategory(x)}>{x}</button>)}</div><div className="activity-grid">{activities.filter(x=>category==="全部"||x[1]===category).map((x,i)=><button className="activity-card" key={x[0]} onClick={()=>openMatch(x[0])}><span className={`activity-icon c${i%5}`}>{x[2]}</span><div><em>{x[1]}</em><h3>{x[0]}</h3><p>{x[3]}</p><b>{x[4]}</b></div><i>开始匹配 →</i></button>)}</div></div>}
+          {view === "plaza" && <div className="workspace-view embedded-view plaza-view">
+            <div className="view-heading plaza-heading"><div><span>CAMPUS ACTIVITY PLAZA</span><h2>大学生娱乐活动广场</h2><p>80 种活动灵感，AI 帮你匹同好、凑人数、订场地并处理候补。</p></div><b>{category === "推荐" ? featuredActivities.size : activities.filter(x=>x.category===category).length}<small>{category === "推荐" ? "本周推荐" : `${category}活动`}</small></b></div>
+            <div className="category-tabs">{plazaCategories.map(x=><button key={x} className={category===x?"active":""} onClick={()=>setCategory(x)}>{x}<small>{x === "推荐" ? featuredActivities.size : activities.filter(item=>item.category===x).length}</small></button>)}</div>
+            <div className="plaza-summary"><div><span className="summary-spark">✦</span><div><b>{category === "推荐" ? "今天不知道玩什么？从这些高成局活动开始" : `${category} · ${activities.filter(x=>x.category===category).length} 个可发起玩法`}</b><p>点选任意活动，直接进入 AI 成局流程；人数、水平、时间和费用都可以继续确认。</p></div></div><button onClick={()=>openMatch()}>直接告诉 AI →</button></div>
+            <div className="activity-groups">{Array.from(new Set(activities.filter(x=>category === "推荐" ? x.featured : x.category===category).map(x=>x.group))).map(group=><section className="activity-section" key={group}><div className="activity-section-title"><h3>{group}</h3><span>{activities.filter(x=>(category === "推荐" ? x.featured : x.category===category)&&x.group===group).length} 个玩法</span></div><div className="activity-grid">{activities.filter(x=>(category === "推荐" ? x.featured : x.category===category)&&x.group===group).map((x,i)=><button className="activity-card" key={x.name} onClick={()=>openMatch(x.name)}><span className={`activity-icon c${i%5}`}>{x.icon}</span><div><em>{x.category} · {x.group}</em><h3>{x.name}</h3><p>{x.note}</p><b>{x.meta}</b></div><i>交给 AI 成局 →</i></button>)}</div></section>)}</div>
+          </div>}
 
           {view === "partners" && <div className="workspace-view embedded-view partner-view"><div className="view-heading"><div><span>CAMPUS PARTNER NETWORK</span><h2>机构接入</h2><p>社团、校园墙和场地商家接入同一个活动网络。</p></div></div><div className="partner-shell"><div className="partner-tabs">{["学生社团","校园墙","场地商家"].map(x=><button className={partner===x?"active":""} key={x} onClick={()=>setPartner(x)}>{x}</button>)}</div><div className="partner-content"><div className="partner-copy"><span className="partner-type">{partner}接入空间</span><h3>{partner==="学生社团"?"把一次招新，变成持续活动供给":partner==="校园墙"?"从发布信息，升级为可报名的校园频道":"把空闲场地，变成稳定的学生订单"}</h3><p>{partner==="学生社团"?"乐器社、舞蹈社、摄影社等获得认证主页；AI处理报名、收费、候补、签到和复盘。":partner==="校园墙"?"帖子可一键转为结构化活动卡，按学校分发并追踪报名与到场。":"台球厅、桌游店、影院和球馆可发布校园时段，自动拼场。"}</p><div className="partner-benefits"><span>✓ 认证主页</span><span>✓ 一键分发</span><span>✓ 候补签到</span><span>✓ 收益结算</span></div><button onClick={()=>notify(`${partner}接入申请 Demo 已提交`)}>申请接入 →</button></div><div className="org-preview"><div className="org-head"><span>{partner==="学生社团"?"乐":partner==="校园墙"?"墙":"店"}</span><div><b>{partner==="学生社团"?"杭城大学吉他社":partner==="校园墙"?"杭城大学校园墙":"南门青年台球俱乐部"}</b><p>负责人已认证 · 本校可见</p></div><em>已接入</em></div><div className="org-stats"><div><b>1,286</b><span>关注学生</span></div><div><b>32</b><span>已完成活动</span></div><div><b>91%</b><span>平均到场率</span></div></div><div className="org-event"><span>本周活动</span><b>{partner==="学生社团"?"零基础吉他合奏体验":partner==="校园墙"?"周五校园露天电影夜":"台球新手四人练习局"}</b><p>AI已完成场地、规则和报名配置</p><button onClick={()=>notify("已加入活动候补名单")}>查看并报名</button></div></div></div></div></div>}
 
