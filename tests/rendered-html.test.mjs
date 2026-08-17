@@ -89,3 +89,22 @@ test("ships configurable AMap venue and location integration", async () => {
   assert.match(envSource, /VITE_AMAP_SECURITY_CODE/);
   assert.match(envSource, /VITE_AMAP_SERVICE_HOST/);
 });
+
+test("ships a device-aware mobile calendar import flow", async () => {
+  const [calendar, room, page] = await Promise.all([
+    readFile(new URL("../lib/calendar.ts", import.meta.url), "utf8"),
+    readFile(new URL("../components/ActivityRoom.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(calendar, /getCalendarDeviceProfile/);
+  assert.match(calendar, /METHOD:PUBLISH/);
+  assert.match(calendar, /stableHash/);
+  assert.match(calendar, /BEGIN:VALARM/);
+  assert.match(room, /添加到手机日历/);
+  assert.match(room, /不会读取你的日历/);
+  assert.match(room, /确认并打开日历/);
+  assert.doesNotMatch(room, />系统日历</);
+  assert.doesNotMatch(room, />钉钉日历</);
+  assert.match(page, /profile\.guidance/);
+});

@@ -23,8 +23,7 @@ type Props = {
   venues: VenueOption[];
   participants: ScoredCandidate[];
   onSelectVenue: (id: string) => void;
-  onAddSystemCalendar: () => void;
-  onAddDingTalkCalendar: () => void;
+  onAddMobileCalendar: () => void;
   onEndActivity: () => void;
   onNotify: (message: string) => void;
 };
@@ -39,8 +38,7 @@ export default function ActivityRoom({
   venues,
   participants,
   onSelectVenue,
-  onAddSystemCalendar,
-  onAddDingTalkCalendar,
+  onAddMobileCalendar,
   onEndActivity,
   onNotify,
 }: Props) {
@@ -52,6 +50,7 @@ export default function ActivityRoom({
   const [venueVotes, setVenueVotes] = useState<Record<string, number>>(() => Object.fromEntries(venues.map((venue, index) => [venue.id, index === 0 ? 3 : 1])));
   const [reminder, setReminder] = useState(true);
   const [exitRequested, setExitRequested] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const sendMessage = (event: FormEvent) => {
     event.preventDefault();
@@ -79,12 +78,29 @@ export default function ActivityRoom({
 
         <div className="room-panel fee-detail"><div className="room-section-title"><b>费用明细</b><span>公开透明</span></div><p><span>AI组织服务</span><b>¥8</b></p><p><span>场地费</span><b>{venueFeeIncluded ? `¥${Math.max(0, seatPrice - 8)}` : "现场AA"}</b></p><p className="total"><span>每人合计</span><b>¥{seatPrice}</b></p></div>
 
-        <div className="room-panel departure-card"><div className="room-section-title"><b>出发与签到</b><span>{reminder ? "提醒已开" : "提醒已关"}</span></div><p>{selectedVenue.address}</p><div className="checkin-code"><span>签到码</span><b>2861</b><small>活动前30分钟开放</small></div><button onClick={() => setReminder(value => !value)}>{reminder ? "关闭出发提醒" : "开启出发提醒"}</button><div className="calendar-actions"><button onClick={onAddSystemCalendar}>系统日历</button><button onClick={onAddDingTalkCalendar}>钉钉日历</button></div></div>
+        <div className="room-panel departure-card"><div className="room-section-title"><b>出发与签到</b><span>{reminder ? "提醒已开" : "提醒已关"}</span></div><p>{selectedVenue.address}</p><div className="checkin-code"><span>签到码</span><b>2861</b><small>活动前30分钟开放</small></div><button onClick={() => setReminder(value => !value)}>{reminder ? "关闭出发提醒" : "开启出发提醒"}</button><div className="calendar-actions mobile-only"><button className="mobile-calendar-button" onClick={() => setCalendarOpen(true)}>添加到手机日历</button><small>支持 iPhone / Android / 电脑 · 提前 1 小时提醒</small></div></div>
 
         <div className="room-panel room-safety"><div className="room-section-title"><b>临时变动</b><span>候补自动接力</span></div>{exitRequested ? <div className="replacement"><b>已发出递补邀请</b><p>候补成员正在确认，原席位暂时保留10分钟。</p></div> : <button onClick={() => { setExitRequested(true); onNotify("退出申请已提交，AI正在邀请候补"); }}>临时退出并通知候补</button>}<button onClick={() => onNotify("已打开举报与安全协助入口")}>举报 / 拉黑 / 安全协助</button></div>
       </aside>
     </div>
 
     <button className="simulate-finish" onClick={onEndActivity}>模拟活动结束，进入互评与关系沉淀 →</button>
+
+    {calendarOpen && <div className="modal-layer calendar-modal-layer" onMouseDown={event => { if (event.target === event.currentTarget) setCalendarOpen(false); }}>
+      <section className="action-modal calendar-modal" role="dialog" aria-modal="true" aria-labelledby="calendar-modal-title">
+        <button className="modal-close" aria-label="关闭日历预览" onClick={() => setCalendarOpen(false)}>×</button>
+        <span>ADD TO CALENDAR</span>
+        <h2 id="calendar-modal-title">添加到手机日历</h2>
+        <p>确认后会生成一个标准日历事件，由你的设备选择系统日历或其他日历应用打开。</p>
+        <div className="calendar-preview">
+          <div><span>活动</span><b>碰个面｜{activity}</b></div>
+          <div><span>时间</span><b>{time}（约 2 小时）</b></div>
+          <div><span>地点</span><b>{selectedVenue.name}<small>{selectedVenue.address}</small></b></div>
+          <div><span>提醒</span><b>开始前 1 小时</b></div>
+        </div>
+        <div className="calendar-privacy"><i>✓</i><p><b>不会读取你的日历</b><small>仅生成本次活动的日历文件；是否保存由你在系统日历中确认。</small></p></div>
+        <div className="calendar-modal-actions"><button onClick={() => setCalendarOpen(false)}>暂不添加</button><button onClick={() => { onAddMobileCalendar(); setCalendarOpen(false); }}>确认并打开日历</button></div>
+      </section>
+    </div>}
   </div>;
 }

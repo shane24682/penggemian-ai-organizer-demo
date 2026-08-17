@@ -6,7 +6,7 @@ import { matchUsers } from "../lib/matching";
 import type { ScoredCandidate } from "../lib/matching";
 import { searchActivities } from "../lib/discovery";
 import { campusLocations, Coordinate, recommendVenues } from "../lib/location";
-import { copyForDingTalk, downloadIcs } from "../lib/calendar";
+import { downloadIcs } from "../lib/calendar";
 import { friendDirectory, searchFriends } from "../lib/friends";
 import { parseFriendPayload } from "../lib/friend-code";
 import type { MbtiResult } from "../lib/mbti";
@@ -372,20 +372,21 @@ export default function Home() {
   const calendarEvent = () => {
     const parsed = new Date(time);
     const start = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
-    return {title:`碰个面｜${activity}`,description:`${level} · ${seats}人局 · 签到码 2861`,location:selectedVenue?.name||"待确认场地",start,end:new Date(start.getTime()+2*60*60*1000)};
+    return {
+      title: `碰个面｜${activity}`,
+      description: `${level} · ${seats}人局 · 席位¥${seatPrice} · ${venueFeeIncluded ? "已含场地费" : "场地费现场AA"} · 签到码 2861`,
+      location: selectedVenue ? `${selectedVenue.name}｜${selectedVenue.address}` : "待确认场地",
+      start,
+      end: new Date(start.getTime()+2*60*60*1000),
+    };
   };
 
-  const addSystemCalendar = () => {
-    downloadIcs(calendarEvent());
+  const addMobileCalendar = () => {
+    const profile = downloadIcs(calendarEvent());
     const updated = history.map((record,index)=>index===0?{...record,calendarAdded:true}:record);
     setHistory(updated);
     localStorage.setItem("penggemian-history", JSON.stringify(updated));
-    notify("日历文件已生成，可导入手机或电脑日历");
-  };
-
-  const addDingTalkCalendar = async () => {
-    await copyForDingTalk(calendarEvent());
-    notify("日程已复制；钉钉直连需组织管理员授权日历接口");
+    notify(profile.guidance);
   };
 
   const sendFriendRequest = (id: string) => {
@@ -525,7 +526,7 @@ export default function Home() {
                   <button className="wide-button" onClick={()=>{setSelectedVenueId(venueOptions[0]?.id||"");setStep(3)}}>推荐候选人并分别发送邀请 <span>不会直接宣布成局 →</span></button>
                 </div>}
                 {step===3&&<InvitationMatch key={`${activity}-${time}-${seats}`} matchPlan={matchPlan} activity={activity} time={displayTime} seats={seats} level={level} userLocation={userLocation} venues={venueOptions} selectedVenueId={selectedVenueId} venueFeeIncluded={venueFeeIncluded} seatPrice={seatPrice} onSelectVenue={setSelectedVenueId} onFormActivity={completeBooking} onNotify={notify}/>}
-                {step===4&&selectedVenue&&<ActivityRoom activity={activity} time={displayTime} seats={seats} seatPrice={seatPrice} venueFeeIncluded={venueFeeIncluded} selectedVenue={selectedVenue} venues={venueOptions} participants={roomParticipants.length ? roomParticipants : matchPlan.selected} onSelectVenue={setSelectedVenueId} onAddSystemCalendar={addSystemCalendar} onAddDingTalkCalendar={addDingTalkCalendar} onEndActivity={finishActivity} onNotify={notify}/>}
+                {step===4&&selectedVenue&&<ActivityRoom activity={activity} time={displayTime} seats={seats} seatPrice={seatPrice} venueFeeIncluded={venueFeeIncluded} selectedVenue={selectedVenue} venues={venueOptions} participants={roomParticipants.length ? roomParticipants : matchPlan.selected} onSelectVenue={setSelectedVenueId} onAddMobileCalendar={addMobileCalendar} onEndActivity={finishActivity} onNotify={notify}/>}
                 {step===5&&<PostActivity activity={activity} participants={roomParticipants.length ? roomParticipants : matchPlan.selected} onRegroup={regroupFromActivity} onSaveConnections={saveActivityConnections} onNotify={notify}/>}
               </div>
             </div>

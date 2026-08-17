@@ -67,3 +67,24 @@
 @media(max-width:1050px){.live-signal-strip{grid-template-columns:repeat(3,1fr)}.room-layout{grid-template-columns:1fr}.room-side{display:grid;grid-template-columns:1fr 1fr}.post-grid{grid-template-columns:1fr}.relationship-actions{display:block}.relationship-grid{margin-top:10px}}
 @media(max-width:760px){.live-signal-strip{grid-template-columns:1fr 1fr}.safety-rule-grid,.candidate-list,.invite-venues,.reconnect-people{grid-template-columns:1fr 1fr}.invite-summary{grid-template-columns:1fr 1fr}.room-side{display:block}.room-side>.room-panel{margin-top:8px}.relationship-grid{grid-template-columns:1fr}.match-view .demo-content{padding:22px 15px}}
 @media(max-width:520px){.live-signal-strip,.safety-rule-grid,.candidate-list,.invite-venues,.reconnect-people{grid-template-columns:1fr}.invite-head,.room-head,.urgent-section-head{align-items:flex-start;flex-direction:column}.invite-clock{text-align:left}.invite-flow{justify-content:flex-start;overflow:auto}.invite-demo-actions{display:block}.invite-demo-actions p{margin-top:7px}.room-members{padding-left:6px}.post-success{align-items:flex-start}.relationship-actions>div:first-child{min-width:0}}
+
+.departure-card>.calendar-actions.mobile-only{grid-template-columns:1fr}
+.departure-card>.calendar-actions .mobile-calendar-button{border-color:var(--orange);background:#fff0e7;color:var(--orange);font-size:6px;font-weight:900}
+.departure-card>.calendar-actions>small{color:#968981;font-size:5px;text-align:center;line-height:1.5}
+.calendar-modal{width:min(560px,95vw)}
+.calendar-preview{display:grid;gap:1px;overflow:hidden;margin-top:18px;border:1px solid #e2d6cf;border-radius:14px;background:#e2d6cf}
+.calendar-preview>div{display:grid;grid-template-columns:70px 1fr;gap:14px;align-items:start;background:#fff;padding:13px 15px}
+.calendar-preview span{color:#978981;font-size:9px}
+.calendar-preview b{font-size:10px;line-height:1.5}
+.calendar-preview b small{display:block;margin-top:3px;color:#8e8078;font-size:8px;font-weight:400}
+.calendar-privacy{display:flex;gap:10px;align-items:flex-start;margin-top:14px;border-radius:12px;background:#e8f4ed;padding:12px;color:#236c4e}
+.calendar-privacy i{display:grid;place-items:center;width:22px;height:22px;flex:none;border-radius:50%;background:#159364;color:#fff;font-style:normal}
+.calendar-privacy p{margin:0}
+.calendar-privacy b,.calendar-privacy small{display:block}
+.calendar-privacy b{font-size:9px}
+.calendar-privacy small{margin-top:4px;color:#547567;font-size:8px;line-height:1.5}
+.calendar-modal-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:18px}
+.calendar-modal-actions button{border:1px solid #ded2ca;border-radius:11px;background:#fff;padding:12px;font-size:9px;font-weight:800}
+.calendar-modal-actions button:last-child{border-color:var(--orange);background:var(--orange);color:#fff}
+
+@media(max-width:560px){.calendar-preview>div{grid-template-columns:52px 1fr;padding:11px}.calendar-modal-actions{grid-template-columns:1fr}.calendar-modal-actions button:last-child{grid-row:1}}
