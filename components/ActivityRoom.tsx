@@ -2,11 +2,13 @@
 
 import { FormEvent, useState } from "react";
 import type { ScoredCandidate } from "../lib/matching";
+import { buildAmapNavigationUrl, type Coordinate } from "../lib/location";
 
 type VenueOption = {
   id: string;
   name: string;
   address: string;
+  coordinate: Coordinate;
   pricePerHour: number;
   openHours: string;
   rating: number;
@@ -51,6 +53,7 @@ export default function ActivityRoom({
   const [reminder, setReminder] = useState(true);
   const [exitRequested, setExitRequested] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const navigationUrl = buildAmapNavigationUrl(selectedVenue, "walk");
 
   const sendMessage = (event: FormEvent) => {
     event.preventDefault();
@@ -66,7 +69,7 @@ export default function ActivityRoom({
   };
 
   return <div className="activity-room">
-    <div className="room-head"><div><span>ACTIVITY ROOM · 已正式成局</span><h2>{activity}活动房间</h2><p>{time} · {selectedVenue.name} · {seats}/{seats}人已确认</p></div><div className="room-members"><span>Y</span>{participants.slice(0, 5).map(person => <span key={person.id}>{person.avatar}</span>)}</div></div>
+    <div className="room-head"><div><span>ACTIVITY ROOM · 已正式成局</span><h2>{activity}活动房间</h2><p>{time} · <a className="room-venue-link" href={navigationUrl} target="_blank" rel="noreferrer" onClick={() => onNotify("正在打开高德地图，默认从当前位置步行导航")}>{selectedVenue.name}<i>↗</i></a> · {seats}/{seats}人已确认</p></div><div className="room-members"><span>Y</span>{participants.slice(0, 5).map(person => <span key={person.id}>{person.avatar}</span>)}</div></div>
 
     <div className="room-layout">
       <section className="room-main">
@@ -78,7 +81,7 @@ export default function ActivityRoom({
 
         <div className="room-panel fee-detail"><div className="room-section-title"><b>费用明细</b><span>公开透明</span></div><p><span>AI组织服务</span><b>¥8</b></p><p><span>场地费</span><b>{venueFeeIncluded ? `¥${Math.max(0, seatPrice - 8)}` : "现场AA"}</b></p><p className="total"><span>每人合计</span><b>¥{seatPrice}</b></p></div>
 
-        <div className="room-panel departure-card"><div className="room-section-title"><b>出发与签到</b><span>{reminder ? "提醒已开" : "提醒已关"}</span></div><p>{selectedVenue.address}</p><div className="checkin-code"><span>签到码</span><b>2861</b><small>活动前30分钟开放</small></div><button onClick={() => setReminder(value => !value)}>{reminder ? "关闭出发提醒" : "开启出发提醒"}</button><div className="calendar-actions mobile-only"><button className="mobile-calendar-button" onClick={() => setCalendarOpen(true)}>添加到手机日历</button><small>支持 iPhone / Android / 电脑 · 提前 1 小时提醒</small></div></div>
+        <div className="room-panel departure-card"><div className="room-section-title"><b>出发与签到</b><span>{reminder ? "提醒已开" : "提醒已关"}</span></div><a className="venue-navigation" href={navigationUrl} target="_blank" rel="noreferrer" onClick={() => onNotify("正在打开高德地图，默认从当前位置步行导航")}><span><b>{selectedVenue.name}</b><small>{selectedVenue.address}</small></span><em>去高德导航 →</em></a><div className="checkin-code"><span>签到码</span><b>2861</b><small>活动前30分钟开放</small></div><button onClick={() => setReminder(value => !value)}>{reminder ? "关闭出发提醒" : "开启出发提醒"}</button><div className="calendar-actions mobile-only"><button className="mobile-calendar-button" onClick={() => setCalendarOpen(true)}>添加到手机日历</button><small>支持 iPhone / Android / 电脑 · 提前 1 小时提醒</small></div></div>
 
         <div className="room-panel room-safety"><div className="room-section-title"><b>临时变动</b><span>候补自动接力</span></div>{exitRequested ? <div className="replacement"><b>已发出递补邀请</b><p>候补成员正在确认，原席位暂时保留10分钟。</p></div> : <button onClick={() => { setExitRequested(true); onNotify("退出申请已提交，AI正在邀请候补"); }}>临时退出并通知候补</button>}<button onClick={() => onNotify("已打开举报与安全协助入口")}>举报 / 拉黑 / 安全协助</button></div>
       </aside>

@@ -71,6 +71,7 @@
 .departure-card>.calendar-actions.mobile-only{grid-template-columns:1fr}
 .departure-card>.calendar-actions .mobile-calendar-button{border-color:var(--orange);background:#fff0e7;color:var(--orange);font-size:6px;font-weight:900}
 .departure-card>.calendar-actions>small{color:#968981;font-size:5px;text-align:center;line-height:1.5}
+.room-venue-link{color:var(--orange);font-weight:800;text-decoration:none}.room-venue-link i{margin-left:3px;font-style:normal}.venue-navigation{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0;border:1px solid #f0c9b9;border-radius:9px;background:#fff5ef;padding:9px;text-decoration:none}.venue-navigation span,.venue-navigation b,.venue-navigation small{display:block}.venue-navigation b{color:#312a26;font-size:7px}.venue-navigation small{margin-top:3px;color:#8b7d75;font-size:5px}.venue-navigation em{flex:none;color:var(--orange);font-size:6px;font-style:normal;font-weight:900}
 .calendar-modal{width:min(560px,95vw)}
 .calendar-preview{display:grid;gap:1px;overflow:hidden;margin-top:18px;border:1px solid #e2d6cf;border-radius:14px;background:#e2d6cf}
 .calendar-preview>div{display:grid;grid-template-columns:70px 1fr;gap:14px;align-items:start;background:#fff;padding:13px 15px}

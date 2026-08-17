@@ -80,6 +80,8 @@ test("ships configurable AMap venue and location integration", async () => {
   const mapSource = await readFile(new URL("../components/AmapVenueMap.tsx", import.meta.url), "utf8");
   const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const envSource = await readFile(new URL("../.env.example", import.meta.url), "utf8");
+  const locationSource = await readFile(new URL("../lib/location.ts", import.meta.url), "utf8");
+  const roomSource = await readFile(new URL("../components/ActivityRoom.tsx", import.meta.url), "utf8");
 
   assert.match(mapSource, /webapi\.amap\.com\/loader\.js/);
   assert.match(mapSource, /VITE_AMAP_KEY/);
@@ -88,6 +90,11 @@ test("ships configurable AMap venue and location integration", async () => {
   assert.match(pageSource, /<AmapVenueMap/);
   assert.match(envSource, /VITE_AMAP_SECURITY_CODE/);
   assert.match(envSource, /VITE_AMAP_SERVICE_HOST/);
+  assert.match(locationSource, /https:\/\/uri\.amap\.com\/navigation/);
+  assert.match(locationSource, /callnative:\s*"1"/);
+  assert.match(locationSource, /coordinate:\s*"gaode"/);
+  assert.match(roomSource, /去高德导航/);
+  assert.match(roomSource, /target="_blank"/);
 });
 
 test("ships a device-aware mobile calendar import flow", async () => {

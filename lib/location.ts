@@ -1,5 +1,7 @@
 export type Coordinate = { lat: number; lng: number; label: string };
 
+export type AmapTravelMode = "walk" | "ride" | "car" | "bus";
+
 export type Venue = {
   id: string;
   name: string;
@@ -12,6 +14,21 @@ export type Venue = {
   recentReview: string;
   address: string;
 };
+
+export function buildAmapNavigationUrl(
+  venue: Pick<Venue, "name" | "coordinate">,
+  mode: AmapTravelMode = "walk",
+) {
+  const params = new URLSearchParams({
+    to: `${venue.coordinate.lng},${venue.coordinate.lat},${venue.name}`,
+    mode,
+    policy: "0",
+    src: "penggemian-campus",
+    coordinate: "gaode",
+    callnative: "1",
+  });
+  return `https://uri.amap.com/navigation?${params.toString()}`;
+}
 
 export const campusLocations: Coordinate[] = [
   {label:"杭州大学城 · 高教西区", lat:30.3156, lng:120.3503},
@@ -66,4 +83,3 @@ export function recommendVenues(category: string, participants: Array<Pick<Coord
     };
   }).sort((a,b)=>b.totalScore-a.totalScore).slice(0,3);
 }
-
