@@ -326,3 +326,85 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 
 /* ⑱ onb 暗色蒙层 / 模态蒙层不要太黑 */
 .onboarding-layer,.modal-layer{background:#0d0c0a99!important;backdrop-filter:blur(6px)!important}
+
+/* ⑲ 活动房间布局：群聊纵向占满 + 主副栏比例调整（chat 1.6fr : side 1fr） */
+.room-layout{grid-template-columns:1.6fr 1fr!important;gap:14px!important;min-height:560px!important;align-items:stretch!important}
+.room-main{flex:1!important;min-height:0!important;display:flex!important;flex-direction:column!important;gap:12px!important}
+.room-main>.room-chat{flex:1!important;display:flex!important;flex-direction:column!important;min-height:380px!important}
+.room-main>.room-chat .message-list{flex:1!important;max-height:none!important;min-height:240px!important;overflow-y:auto!important;margin:10px 0!important;padding-right:4px}
+.room-main>.room-chat form{margin-top:auto!important;flex:none!important}
+.room-side{align-self:stretch!important}
+
+/* ⑳ 文本对比度修复 #1：橙底白字 CTA / 橙字浅米色按钮全部加深 */
+.departure-card>.calendar-actions .mobile-calendar-button{background:var(--ink)!important;color:#fff!important;border-color:var(--ink)!important;font-weight:800!important;padding:9px 7px!important;font-size:6px!important;letter-spacing:.3px!important}
+.departure-card>.calendar-actions .mobile-calendar-button:hover{background:#1f1e1b!important}
+.profile-status.unverified{background:var(--ink)!important;color:#fff!important;font-weight:800!important;letter-spacing:.3px!important;border:0!important}
+.fee-choice button.selected{background:#e54a00!important;color:#fff!important;font-weight:900!important;border-color:#e54a00!important;letter-spacing:.3px!important}
+.brand em{background:var(--ink)!important;color:#fff!important;border:0!important;letter-spacing:.5px!important}
+.idea-input>span,.activity-search>span,.plaza-search>span{background:var(--orange)!important;color:#fff!important;font-weight:900!important}
+
+/* ㉑ 文本对比度修复 #2：白字 on 橙底（3.12:1）→ 改用 #e54a00（4.0:1，过 AA-large 3:1） */
+.simulate-finish{background:#e54a00!important;color:#fff!important;font-weight:900!important;letter-spacing:.5px!important;box-shadow:3px 3px 0 #0d0c0a!important}
+.invite-demo-actions button{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.icebreaker-card button.selected{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.urgent-card.hot .urgent-top span{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.category-tabs button.active small{background:#e54a00!important;color:#fff!important;font-weight:800!important}
+.preference-grid button.selected>span{background:#e54a00!important;color:#fff!important}
+.activity-icon.c0{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.test-orb.activity{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.calendar-modal-actions button:last-child{background:#e54a00!important;color:#fff!important;font-weight:900!important;border-color:#e54a00!important}
+.summary-spark{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.onboarding-mark{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.save-preferences{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+
+/* ㉒ 暗色卡片小字提升可读性（#aaa on #1f1e1b → #d4d4d4） */
+.ai-announcement p,.invite-demo-actions p,.post-success p{color:#d4d4d4!important}
+
+/* ㉓ 群聊消息文字加大、行高提升，呼应"chat 区域放大"诉求 */
+.room-main>.room-chat .ai-message i,.room-main>.room-chat .member-message i{width:30px!important;height:30px!important;font-size:8px!important}
+.room-main>.room-chat .ai-message p,.room-main>.room-chat .member-message p{font-size:8px!important;line-height:1.55!important;padding:8px 11px!important}
+.room-main>.room-chat .message-list b{font-size:8px!important}
+.room-main>.room-chat input{font-size:9px!important;padding:10px 12px!important}
+.room-main>.room-chat input::placeholder{color:#a8a098}
+.room-main>.room-chat form button{font-size:8px!important;padding:10px 16px!important}
+
+/* ⑲ 活动房间布局：群聊纵向占满 + 主副栏比例调整（chat 1.6fr : side 1fr） */
+.room-layout{grid-template-columns:1.6fr 1fr!important;gap:14px!important;min-height:560px!important;align-items:stretch!important}
+.room-main{flex:1!important;min-height:0!important;display:flex!important;flex-direction:column!important;gap:12px!important}
+.room-main>.room-chat{flex:1!important;display:flex!important;flex-direction:column!important;min-height:380px!important}
+.room-main>.room-chat .message-list{flex:1!important;max-height:none!important;min-height:240px!important;overflow-y:auto!important;margin:10px 0!important;padding-right:4px}
+.room-main>.room-chat form{margin-top:auto!important;flex:none!important}
+.room-side{align-self:stretch!important}
+
+/* ⑳ 文本对比度修复 #1：橙底白字 CTA / 橙字浅米色按钮全部加深 */
+.departure-card>.calendar-actions .mobile-calendar-button{background:var(--ink)!important;color:#fff!important;border-color:var(--ink)!important;font-weight:800!important;padding:9px 7px!important;font-size:6px!important;letter-spacing:.3px!important}
+.departure-card>.calendar-actions .mobile-calendar-button:hover{background:#1f1e1b!important}
+.profile-status.unverified{background:var(--ink)!important;color:#fff!important;font-weight:800!important;letter-spacing:.3px!important;border:0!important}
+.fee-choice button.selected{background:#e54a00!important;color:#fff!important;font-weight:900!important;border-color:#e54a00!important;letter-spacing:.3px!important}
+.brand em{background:var(--ink)!important;color:#fff!important;border:0!important;letter-spacing:.5px!important}
+.idea-input>span,.activity-search>span,.plaza-search>span{background:var(--orange)!important;color:#fff!important;font-weight:900!important}
+
+/* ㉑ 文本对比度修复 #2：白字 on 橙底（3.12:1）→ 改用 #e54a00（4.0:1，过 AA-large 3:1） */
+.simulate-finish{background:#e54a00!important;color:#fff!important;font-weight:900!important;letter-spacing:.5px!important;box-shadow:3px 3px 0 #0d0c0a!important}
+.invite-demo-actions button{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.icebreaker-card button.selected{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.urgent-card.hot .urgent-top span{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.category-tabs button.active small{background:#e54a00!important;color:#fff!important;font-weight:800!important}
+.preference-grid button.selected>span{background:#e54a00!important;color:#fff!important}
+.activity-icon.c0{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.test-orb.activity{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.calendar-modal-actions button:last-child{background:#e54a00!important;color:#fff!important;font-weight:900!important;border-color:#e54a00!important}
+.summary-spark{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.onboarding-mark{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+.save-preferences{background:#e54a00!important;color:#fff!important;font-weight:900!important}
+
+/* ㉒ 暗色卡片小字提升可读性（#aaa on #1f1e1b → #d4d4d4） */
+.ai-announcement p,.invite-demo-actions p,.post-success p{color:#d4d4d4!important}
+
+/* ㉓ 群聊消息文字加大、行高提升，呼应"chat 区域放大"诉求 */
+.room-main>.room-chat .ai-message i,.room-main>.room-chat .member-message i{width:30px!important;height:30px!important;font-size:8px!important}
+.room-main>.room-chat .ai-message p,.room-main>.room-chat .member-message p{font-size:8px!important;line-height:1.55!important;padding:8px 11px!important}
+.room-main>.room-chat .message-list b{font-size:8px!important}
+.room-main>.room-chat input{font-size:9px!important;padding:10px 12px!important}
+.room-main>.room-chat input::placeholder{color:#a8a098}
+.room-main>.room-chat form button{font-size:8px!important;padding:10px 16px!important}
