@@ -797,3 +797,47 @@ html{overflow-anchor:none!important}
 .room-chat form button,.room-panel>button{background:#fff!important;color:var(--orange)!important;border:1px solid #e4d6ce!important}
 .history-list article>button,.history-empty button{background:#fff!important;color:var(--orange)!important;border:1px solid #e4d6ce!important}
 .friend-identity>button{background:#fff!important;color:var(--orange)!important;border:1px solid #e4d6ce!important}
+
+/* ㉝ step 3 场馆投票融合 + 整体字号放大 */
+/* --- 场馆卡片融合投票样式 --- */
+.invite-venues button{grid-template-columns:28px 1fr auto!important;gap:8px!important;padding:11px!important}
+.invite-venues button.voted{border-color:var(--orange)!important;background:#fff6f0!important;box-shadow:0 0 0 2px #ff5a1f15}
+.invite-venues .venue-num{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#f0e8e3;color:var(--orange);font-size:10px!important;font-weight:900}
+.invite-venues .venue-info{min-width:0}
+.invite-venues .venue-vote-bar{height:4px;border-radius:99px;background:#eee5df;margin-top:6px;overflow:hidden}
+.invite-venues .venue-vote-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--orange),#ff9b72);transition:width .3s}
+.invite-venues .venue-vote-stat{text-align:right;display:flex;flex-direction:column;gap:2px;align-items:flex-end;justify-content:center}
+.invite-venues .venue-vote-stat b{font-size:11px!important;color:var(--orange);font-weight:900}
+.invite-venues .venue-vote-stat span{font-size:8px!important;color:#9e9088}
+.invite-venues .venue-vote-stat em{font-size:9px!important;color:var(--green);font-style:normal;font-weight:700}
+.venue-vote-hint{text-align:center;margin:6px 0;font-size:9px!important;color:#8d7f78}
+.venue-vote-hint b{color:var(--orange);font-weight:800}
+.venue-compare{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;padding:8px 10px;border:1px dashed #ddd6ce;border-radius:10px;background:#faf8f5}
+.venue-compare span{font-size:9px!important;font-weight:800;color:var(--orange);white-space:nowrap}
+.venue-compare em{font-size:8px!important;color:#8d7f78;font-style:normal}
+
+/* --- step 3 整体字号放大 6-8px → 9-12px --- */
+.invite-head>div:first-child>span{font-size:10px!important}
+.invite-head p{font-size:11px!important}
+.invite-clock small{font-size:9px!important}
+.invite-summary span{font-size:10px!important}
+.invite-flow span{font-size:9px!important;padding:7px 11px!important}
+.invite-flow i{font-size:10px!important}
+.candidate-copy b{font-size:12px!important}
+.candidate-copy em{font-size:9px!important}
+.candidate-copy p{font-size:9px!important}
+.candidate-copy small{font-size:8px!important}
+.invite-status{font-size:9px!important;padding:6px 9px!important}
+.backup-line{font-size:10px!important}
+.backup-line b{font-size:10px!important}
+.backup-line span{font-size:9px!important}
+.invite-demo-actions p{font-size:9px!important}
+.invite-demo-actions button{font-size:10px!important}
+.venue-lock-head span{font-size:9px!important}
+.venue-lock-head>b{font-size:9px!important;padding:7px 10px!important}
+.invite-venues b{font-size:11px!important}
+.invite-venues p{font-size:9px!important}
+.invite-venues small{font-size:8px!important;line-height:1.5!important}
+.lock-cost span{font-size:10px!important}
+.pre-match-privacy b{font-size:10px!important}
+.pre-match-privacy span{font-size:9px!important}

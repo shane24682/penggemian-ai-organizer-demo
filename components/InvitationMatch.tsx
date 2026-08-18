@@ -67,6 +67,12 @@ export default function InvitationMatch({
 }: Props) {
   const [round, setRound] = useState(() => createInvitationRound(matchPlan.selected, matchPlan.backups, seats));
   const [secondsLeft, setSecondsLeft] = useState(14 * 60 + 32);
+  const [venueVotes, setVenueVotes] = useState<Record<string, number>>(() => {
+    const seed: Record<string, number> = {};
+    venues.forEach((venue, index) => { seed[venue.id] = [3, 1, 1][index] || 1; });
+    return seed;
+  });
+  const [userVenueVote, setUserVenueVote] = useState<string | null>(null);
   const counts = useMemo(() => invitationCounts(round), [round]);
   const ready = counts.confirmed >= seats;
 
@@ -94,6 +100,24 @@ export default function InvitationMatch({
     setRound(next);
     if (after.confirmed > before.confirmed) onNotify("收到一位同学确认，仍需达到人数阈值");
     else onNotify("有人拒绝邀请，候补已自动递补");
+  };
+
+  const totalVenueVotes = Object.values(venueVotes).reduce((sum, n) => sum + n, 0);
+  const sortedVenues = [...venues].sort((a, b) => (venueVotes[b.id] || 0) - (venueVotes[a.id] || 0));
+  const topVenue = sortedVenues[0];
+  const voteVenue = (venueId: string) => {
+    setVenueVotes(current => {
+      const next = { ...current };
+      if (userVenueVote === venueId) {
+        next[venueId] = Math.max(0, (next[venueId] || 0) - 1);
+        setUserVenueVote(null);
+      } else {
+        if (userVenueVote) next[userVenueVote] = Math.max(0, (next[userVenueVote] || 0) - 1);
+        next[venueId] = (next[venueId] || 0) + 1;
+        setUserVenueVote(venueId);
+      }
+      return next;
+    });
   };
 
   return <div className="invitation-match">
@@ -127,9 +151,18 @@ export default function InvitationMatch({
     </div>
 
     <section className={`venue-lock ${ready ? "ready" : ""}`}>
-      <div className="venue-lock-head"><div><span>{ready ? "人数已达阈值" : "场地暂未锁定"}</span><h3>{ready ? "选择场地并正式成局" : "候选场地仅做预算，不提前公开地址"}</h3></div><b>{ready ? "可锁定" : `还差 ${Math.max(0, seats - counts.confirmed)} 人`}</b></div>
+      <div className="venue-lock-head"><div><span>{ready ? "人数已达阈值 · 选择场地" : "场馆投票 · 选择你偏好的场地"}</span><h3>{ready ? "选择场地并正式成局" : "点击场地卡片投票，达标后解锁地址"}</h3></div><b>{ready ? "可锁定" : `已收到 ${totalVenueVotes} 票`}</b></div>
       {ready && <AmapVenueMap center={userLocation} venues={venues} selectedVenueId={selectedVenueId} onSelectVenue={onSelectVenue} compact />}
-      <div className="invite-venues">{venues.map((venue, index) => <button key={venue.id} disabled={!ready} className={selectedVenueId === venue.id ? "selected" : ""} onClick={() => onSelectVenue(venue.id)}><span>0{index + 1}</span><div><b>{ready ? venue.name : `候选场地 ${String.fromCharCode(65 + index)}`}</b><p>¥{venue.pricePerHour}/小时 · {venue.openHours} · ★{venue.rating}（{venue.reviewCount}）</p><small>{ready ? venue.recentReview : "具体名称与地址将在全员确认后显示"}</small></div><em>约¥{venue.perPerson}/人</em></button>)}</div>
+      <div className="invite-venues">{sortedVenues.map((venue) => {
+        const votes = venueVotes[venue.id] || 0;
+        const percent = totalVenueVotes ? Math.round((votes / totalVenueVotes) * 100) : 0;
+        const isVoted = userVenueVote === venue.id;
+        const isSelected = selectedVenueId === venue.id;
+        const oi = venues.findIndex(v => v.id === venue.id);
+        return <button key={venue.id} className={`${isSelected ? "selected" : ""} ${isVoted ? "voted" : ""}`} onClick={() => { voteVenue(venue.id); if (ready) onSelectVenue(venue.id); }}><span className="venue-num">0{oi + 1}</span><div className="venue-info"><b>{venue.name}</b><p>¥{venue.pricePerHour}/小时 · {venue.openHours} · ★{venue.rating}（{venue.reviewCount}）</p><small>{ready ? venue.recentReview : "地址将在全员确认后显示"}</small><div className="venue-vote-bar"><i style={{ width: `${percent}%` }} /></div></div><div className="venue-vote-stat"><b>{votes}票</b><span>{percent}%</span><em>约¥{venue.perPerson}/人</em></div></button>;
+      })}</div>
+      <div className="venue-vote-hint">{userVenueVote ? <span>已为 <b>{venues.find(v => v.id === userVenueVote)?.name}</b> 投票 · 点击可改投</span> : <span>点击任意场地即可投票，截止前可随时修改</span>}</div>
+      <div className="venue-compare"><span>场地对比</span>{venues.map(v => <em key={v.id}>{v.name}：¥{v.pricePerHour}/h · ★{v.rating} · {v.openHours}</em>)}</div>
       <div className="lock-cost"><span>{venueFeeIncluded ? "席位含场地费" : "场地费现场AA"}</span><b>¥{seatPrice}/席</b></div>
       <button className="form-activity" disabled={!ready || !selectedVenueId} onClick={() => onFormActivity(round.candidates.filter(candidate => candidate.invitationStatus === "confirmed").slice(0, Math.max(0, seats - 1)))}>{ready ? `锁定场地并正式成局 · ¥${seatPrice} →` : "等待全部确认后才能成局"}</button>
     </section>
