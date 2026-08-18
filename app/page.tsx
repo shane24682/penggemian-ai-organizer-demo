@@ -290,6 +290,29 @@ export default function Home() {
     setView("match");
   };
 
+  const joinUrgentEvent = (event: { name: string; current: number; total: number; time: string; place: string; urgency: string }) => {
+    setActivity(event.name);
+    setSearchQuery(event.name);
+    setSeats(event.total);
+    setVenueFeeIncluded(true);
+    setRoomParticipants([]);
+    const record: HistoryRecord = {
+      id: `urgent-${event.name}-${Date.now()}`,
+      activity: event.name,
+      time: event.time,
+      venue: event.place,
+      price: 35,
+      createdAt: new Date().toISOString(),
+      status: "已成局",
+    };
+    const next = [record, ...history.filter(item => item.activity !== event.name)];
+    setHistory(next);
+    localStorage.setItem("penggemian-history", JSON.stringify(next));
+    setStep(4);
+    setView("match");
+    notify(`${event.name} · 已直接成局（${event.urgency}）`);
+  };
+
   const saveLocation = (location: Coordinate) => {
     setUserLocation(location);
     localStorage.setItem("penggemian-location", JSON.stringify(location));
@@ -503,8 +526,8 @@ export default function Home() {
           {view === "home" && <div className="workspace-view home-view live-home">
             <div className="live-heading"><div><span>LIVE CAMPUS SIGNALS</span><h1>现在，谁正缺你一个？</h1><p>按真实席位缺口优先展示；点击即可进入匹配与补位流程。</p></div><button onClick={()=>setView("plaza")}>查看全部活动 →</button></div>
             <div className="live-signal-strip">{liveSignals.map(signal=><button className={signal.tone} key={signal.title} onClick={()=>signal.title.includes("麻将")?openMatch("麻将三缺一"):notify(signal.detail)}><span>{signal.icon}</span><div><small>{signal.label}</small><b>{signal.title}</b><p>{signal.detail}</p></div></button>)}</div>
-            <div className="urgent-section-head"><div><span>OPEN SEATS NOW</span><h2>正在等你确认的席位</h2></div><p>点击后先进入邀请确认，不会立即成局。</p></div>
-            <div className="urgent-grid">{urgentEvents.map((event,index)=><button className={`urgent-card ${index===0?"hot":""}`} key={event.name} onClick={()=>openMatch(event.name)}><div className="urgent-top"><span>{index===0?"急":"缺"}</span><em>{event.urgency}</em></div><h2>{event.name}</h2><p>{event.time} · {index===0?"距你约1.2km":"同校 · 约1—3km"}</p><div className="seat-line"><i style={{width:`${event.current/event.total*100}%`}}/><b>{event.current}/{event.total}</b></div><small>查看并确认 →</small></button>)}</div>
+            <div className="urgent-section-head"><div><span>OPEN SEATS NOW</span><h2>正在等你确认的席位</h2></div><p>点击直接进入活动房间，立即成局。</p></div>
+            <div className="urgent-grid">{urgentEvents.map((event,index)=><button className={`urgent-card ${index===0?"hot":""}`} key={event.name} onClick={()=>joinUrgentEvent(event)}><div className="urgent-top"><span>{index===0?"急":"缺"}</span><em>{event.urgency}</em></div><h2>{event.name}</h2><p>{event.time} · {index===0?"距你约1.2km":"同校 · 约1—3km"}</p><div className="seat-line"><i style={{width:`${event.current/event.total*100}%`}}/><b>{event.current}/{event.total}</b></div><small>查看并确认 →</small></button>)}</div>
             <div className="home-recommend-head"><div><span>FOR YOU</span><h2>{preferences.length?"根据你的偏好，为你挑了 4 个":"先看看本校最容易成局的 4 个"}</h2></div><div><button onClick={()=>setRecommendationSeed(seed=>seed+1)}>换一组</button><button onClick={openTestCenter}>不知道喜欢什么？做测试 →</button></div></div>
             <div className="home-recommend-grid">{recommendations.map((item,index)=><button key={item.name} onClick={()=>openMatch(item.name)}><span className={`activity-icon c${index}`}>{item.icon}</span><div><em>{item.category}</em><h3>{item.name}</h3><p>{item.note}</p></div><i>匹配 →</i></button>)}</div>
           </div>}
