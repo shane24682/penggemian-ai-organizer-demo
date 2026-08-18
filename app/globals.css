@@ -670,3 +670,15 @@ html{overflow-anchor:none!important}
 .search-results .activity-grid,.recommendation-grid,.activity-groups,.activity-section,
 .recommendation-grid .activity-card,.activity-section .activity-card,
 .recommend-toolbar,.plaza-summary{overflow-anchor:none}
+/* ㉘ 放宽搜索框+活动广场宽度：原 .search-panel{max-width:900px;margin:auto}
+   在宽屏下左右大量留白，搜索框和卡片都被锁在 900px 居中。改为充满父容器、
+   活动卡 4 列填满、利用 .demo-content 内的全部可用空间。 */
+.search-panel{max-width:none;margin:0}
+.match-view .plaza-merge .activity-grid{grid-template-columns:repeat(4,1fr);gap:14px}
+.match-view .plaza-merge .recommendation-grid{grid-template-columns:repeat(4,1fr)!important;gap:14px}
+.match-view .plaza-merge .activity-card{padding:16px 14px}
+.match-view .plaza-merge .activity-card h3{font-size:14px}
+.match-view .plaza-merge .activity-card p{font-size:9.5px;line-height:1.5}
+.match-view .plaza-merge .activity-icon{width:38px;height:38px;font-size:14px}
+.activity-search,.plaza-search{padding:11px 14px}
+.activity-search input,.plaza-search input{font-size:14px}
