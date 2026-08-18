@@ -238,6 +238,19 @@ export default function Home() {
     return {categories,tags,type:tags.slice(0,2).join(" · ")||"兴趣探索者"};
   }, [quizAnswers]);
 
+  // 切换视图/步骤时，把 .workspace-main 滚动到导航条正下方，避免 .product-intro 的深色渐变遮挡 view-heading
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      const target = document.querySelector(".workspace-main");
+      if (!target) return;
+      const rect = (target as HTMLElement).getBoundingClientRect();
+      const navHeight = 76;
+      const top = rect.top + window.scrollY - navHeight;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [view, step]);
+
   const preferenceCategories = useMemo(() => preferences.map(name=>allActivities.find(item=>item.name===name)?.category).filter(Boolean) as string[], [preferences,allActivities]);
   const mbtiCategories = useMemo(() => {
     const tags = mbtiResult?.tags || [];
