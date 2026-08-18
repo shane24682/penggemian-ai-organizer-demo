@@ -617,3 +617,19 @@ button[style*="background:#000"],button[style*="background: black"]{background:#
 .bubble.user{background:#3a261a!important}
 .composer .send,.sent{background:#e54a00!important}
 
+
+/* --- ㉗ 全屏宽度：取消 1160/1320px 内容宽度上限，内容撑满屏幕 --- */
+.product-intro{
+  padding:60px clamp(24px,3vw,48px) 86px!important
+}
+.hero,.plaza,.demo-section,.how,.partners,.business,.research,.scenes,footer{
+  padding-left:clamp(24px,3vw,48px)!important;
+  padding-right:clamp(24px,3vw,48px)!important
+}
+/* 内部网格自动扩列：宽屏下三列变多列，填满新增空间 */
+@media(min-width:1500px){
+  .plaza-view .activity-grid{grid-template-columns:repeat(4,1fr)!important}
+  .urgent-grid,.home-recommend-grid{grid-template-columns:repeat(4,1fr)!important}
+  .dashboard-grid{grid-template-columns:1.2fr 1.1fr .85fr .85fr!important}
+  .recommendation-grid{grid-template-columns:repeat(3,1fr)!important}
+}
