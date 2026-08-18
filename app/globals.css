@@ -633,3 +633,31 @@ button[style*="background:#000"],button[style*="background: black"]{background:#
   .dashboard-grid{grid-template-columns:1.2fr 1.1fr .85fr .85fr!important}
   .recommendation-grid{grid-template-columns:repeat(3,1fr)!important}
 }
+
+/* --- ㉘ 活动广场合并到匹配页：样式 --- */
+.plaza-merge{
+  margin-top:28px;padding-top:22px;
+  border-top:2px dashed #e8d8c8;
+}
+.plaza-merge-head{
+  display:flex;align-items:baseline;gap:12px;margin-bottom:14px;
+}
+.plaza-merge-head span{
+  font-size:9px;color:var(--orange);font-weight:900;letter-spacing:1.4px;
+}
+.plaza-merge-head b{font-size:14px;color:var(--ink)}
+.match-view .plaza-merge .category-tabs{
+  margin:0 0 14px;flex-wrap:wrap;gap:6px;
+}
+.match-view .plaza-merge .activity-grid{
+  grid-template-columns:repeat(3,1fr);gap:12px;
+}
+@media(max-width:850px){
+  .match-view .plaza-merge .activity-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:560px){
+  .match-view .plaza-merge .activity-grid{grid-template-columns:1fr}
+}
+.match-view .plaza-merge .activity-card{
+  min-height:130px;
+}
