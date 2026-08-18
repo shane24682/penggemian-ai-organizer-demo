@@ -522,3 +522,98 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .review-tags button{font-size:7px!important}
 .reconnect-card>span,.review-card>span{font-size:7px!important}
 .reconnect-card h3,.review-card h3{font-size:11px!important}
+
+/* ㉖ 全面去黑底 / 强对比度修正 v4
+   用户反馈「黑色不行，用棕色」 — 把所有黑底改为深棕 #3a261a，
+   暗块里的所有文字强制成米白 / 浅米色。 */
+:root{--brown:#3a261a;--brown2:#5a3a26;--cream:#fff4e6}
+
+/* --- 1. 城市街拍约拍等 idea-input 提交按钮强制橙底白字 --- */
+.idea-input button,.wide-button{
+  background:#e54a00!important;
+  color:#fff!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  border:0!important
+}
+
+/* --- 2. profile 校园信任档案 黑卡 → 深棕卡 + 米白字 --- */
+.profile-trust-strip{
+  background:linear-gradient(135deg,#3a261a,#2a1808)!important;
+  color:#fff4e6!important;
+  border-color:#5a3a26!important
+}
+.profile-trust-strip *{color:#fff4e6!important}
+.profile-trust-strip>div:not(:first-child) span{color:#d4b896!important}
+.profile-trust-strip>button{
+  background:rgba(255,244,230,.12)!important;
+  color:#fff4e6!important;
+  border:1px solid rgba(255,244,230,.25)!important
+}
+.profile-trust-strip>div:first-child span{color:#ff9d78!important}
+
+/* --- 3. profile-cover 顶部深色信息卡（Young/杭城大学）副标题提亮 --- */
+.profile-cover{background:linear-gradient(145deg,#5a3a26,#2a1808)!important}
+.profile-cover>div{color:#fff4e6}
+.profile-copy p{color:#d4b896!important;font-size:10px!important}
+.profile-copy em{color:#d4b896!important;border-color:rgba(255,244,230,.3)!important}
+.profile-stats span{color:#d4b896!important}
+
+/* --- 4. MBTI 测试卡：黑渐变 → 深棕渐变，h3/p 强制白 --- */
+.test-center-grid>button:last-child{
+  background:linear-gradient(145deg,#3a261a,#1a0e04)!important;
+  color:#fff4e6!important;
+  border-color:#5a3a26!important
+}
+.test-center-grid>button:last-child *{color:#fff4e6!important}
+.test-center-grid>button:last-child h3{color:#fff4e6!important;font-size:24px!important}
+.test-center-grid>button:last-child p{color:#d4b896!important}
+.test-center-grid>button:last-child>div:last-child{border-color:rgba(255,244,230,.2)!important}
+.test-center-grid>button:last-child>div:last-child b{color:#ff9d78!important}
+
+/* --- 5. how 介绍区（4个步骤卡）：深棕背景，米白文字 --- */
+.how{background:#2a1808!important;color:#fff4e6!important}
+.how h3,.how p{color:#fff4e6!important}
+.step-grid article{
+  background:linear-gradient(160deg,#3a261a,#1a0e04)!important;
+  border-color:#5a3a26!important;
+  color:#fff4e6!important
+}
+.step-grid article *{color:#fff4e6!important}
+.step-grid article>span{color:#ff9d78!important}
+.step-grid article p{color:#d4b896!important}
+.step-grid article b{color:#fff4e6!important;font-size:15px!important}
+.step-grid article div{color:#d4b896!important}
+.comparison{background:#1a0e04!important;color:#fff4e6!important;border:1px solid #3a261a!important}
+.comparison *{color:#fff4e6!important}
+
+/* --- 6. 机构接入（partners）深色信息卡：深棕 + 米白 --- */
+.org-preview{background:linear-gradient(160deg,#3a261a,#1a0e04)!important;color:#fff4e6!important;border-color:#5a3a26!important}
+.org-preview *{color:#fff4e6!important}
+.org-head b,.org-head p{color:#fff4e6!important}
+.org-head em{color:#88c4a3!important}
+.org-stats div{background:rgba(255,244,230,.06)!important;border:1px solid rgba(255,244,230,.1)}
+.org-stats b{color:#fff4e6!important;font-size:16px!important}
+.org-stats span{color:#d4b896!important}
+.org-event{background:rgba(255,244,230,.04)!important;border:1px solid rgba(255,244,230,.1)!important;border-radius:9px;padding:11px}
+.org-event b{color:#fff4e6!important}
+.org-event p{color:#d4b896!important}
+.org-event button{background:#e54a00!important;color:#fff!important;border:0;font-weight:800}
+.partner-view .partner-copy button{background:#e54a00!important;color:#fff!important;border:0;font-weight:800}
+.partner-copy h3{color:#fff4e6!important;font-size:24px!important}
+.partner-copy p{color:#d4b896!important}
+.partner-type{color:#ff9d78!important}
+
+/* --- 7. campus-pill 选中态橙色：副标题改为深色（避免浅灰看不清） --- */
+.campus-pill.active,.campus-pill[data-selected="true"]{
+  background:#fff0e7!important;
+  color:var(--ink)!important;
+  border:2px solid var(--orange)!important
+}
+.campus-pill.active small,.campus-pill.active span{color:#8a6b58!important}
+
+/* --- 8. 全局按钮黑底兜底改为深棕（防止遗漏） --- */
+button[style*="background:#000"],button[style*="background: black"]{background:#3a261a!important}
+.bubble.user{background:#3a261a!important}
+.composer .send,.sent{background:#e54a00!important}
+
