@@ -697,3 +697,90 @@ html{overflow-anchor:none!important}
 @media (min-width:1700px){
   .home-view .urgent-grid,.home-view .home-recommend-grid{grid-template-columns:repeat(4,1fr)!important}
 }
+
+/* ㉛ 高德地图搜索增强：搜索框、建议列表、目的地信息面板、导航按钮 */
+.amap-shell.amap-search-enabled{position:relative}
+.amap-search-overlay{position:absolute;top:10px;left:10px;right:10px;z-index:200;max-width:360px}
+.amap-search-box{display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:8px 12px;box-shadow:0 2px 12px rgba(0,0,0,.15);border:1.5px solid #ff5a1f;transition:border-color .2s}
+.amap-search-box:focus-within{border-color:#e54a00;box-shadow:0 2px 16px rgba(255,90,31,.25)}
+.amap-search-icon{font-size:15px;flex-shrink:0;opacity:.6}
+.amap-search-box input{flex:1;border:0;outline:0;font-size:14px;font-weight:600;color:#171713;background:transparent;font-family:inherit}
+.amap-search-box input::placeholder{color:#999;font-weight:400}
+.amap-search-clear{flex-shrink:0;width:22px;height:22px;border:0;border-radius:50%;background:#f0f0f0;color:#666;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.amap-search-clear:hover{background:#ff5a1f;color:#fff}
+.amap-search-loading{flex-shrink:0;font-size:12px;color:#ff5a1f;white-space:nowrap}
+.amap-suggest-list{margin-top:6px;background:#fff;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.15);overflow:hidden;max-height:280px;overflow-y:auto;border:1px solid #eee}
+.amap-suggest-item{display:flex;flex-direction:column;gap:2px;width:100%;padding:10px 14px;border:0;border-bottom:1px solid #f5f5f5;background:transparent;text-align:left;cursor:pointer;transition:background .12s;font-family:inherit}
+.amap-suggest-item:last-child{border-bottom:0}
+.amap-suggest-item:hover{background:#fff4e6}
+.amap-suggest-item b{font-size:14px;color:#171713;font-weight:700}
+.amap-suggest-item small{font-size:12px;color:#999;line-height:1.4}
+.amap-suggest-empty{padding:14px;text-align:center;font-size:13px;color:#999}
+.amap-dest-panel{position:absolute;bottom:52px;left:10px;right:10px;z-index:200;display:flex;align-items:center;gap:12px;background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 -2px 20px rgba(0,0,0,.18);border:1.5px solid #ff5a1f;animation:amap-panel-in .25s ease}
+@keyframes amap-panel-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.amap-dest-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.amap-dest-info b{font-size:15px;font-weight:800;color:#171713;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.amap-dest-info small{font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.amap-dest-distance{display:inline-block;font-size:13px;font-weight:700;color:#ff5a1f;background:#fff4e6;padding:2px 8px;border-radius:6px;margin-top:2px;align-self:flex-start}
+.amap-dest-nav{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#ff5a1f,#e54a00);color:#fff;font-size:13px;font-weight:800;padding:8px 14px;border-radius:8px;text-decoration:none;white-space:nowrap;transition:transform .12s,box-shadow .12s;box-shadow:0 2px 8px rgba(255,90,31,.3)}
+.amap-dest-nav:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,90,31,.4)}
+.amap-dest-nav:active{transform:translateY(0)}
+.amap-dest-close{flex-shrink:0;width:28px;height:28px;border:0;border-radius:50%;background:#f5f5f5;color:#666;font-size:14px;cursor:pointer;transition:background .12s}
+.amap-dest-close:hover{background:#eee;color:#333}
+/* 目的地标记样式 */
+.amap-pin.dest{background:#ff5a1f;border:2px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);padding:4px 8px;box-shadow:0 2px 10px rgba(255,90,31,.5)}
+.amap-pin.dest span{display:inline-block;transform:rotate(45deg);color:#fff;font-size:12px;font-weight:800}
+.amap-pin.dest b{display:none}
+/* compact 模式适配 */
+.amap-shell.compact .amap-search-overlay{max-width:280px}
+.amap-shell.compact .amap-dest-panel{bottom:42px;padding:8px 12px}
+.amap-shell.compact .amap-dest-info b{font-size:13px}
+.amap-shell.compact .amap-dest-nav{font-size:12px;padding:6px 10px}
+/* 移动端适配 */
+@media(max-width:650px){
+  .amap-search-overlay{max-width:none;left:8px;right:8px}
+  .amap-dest-panel{left:8px;right:8px;flex-wrap:wrap}
+  .amap-dest-info{min-width:100%}
+}
+﻿
+/* 高德地图搜索增强：搜索框、建议列表、目的地信息面板、导航按钮 */
+.amap-shell.amap-search-enabled{position:relative}
+.amap-search-overlay{position:absolute;top:10px;left:10px;right:10px;z-index:200;max-width:360px}
+.amap-search-box{display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:8px 12px;box-shadow:0 2px 12px rgba(0,0,0,.15);border:1.5px solid #ff5a1f;transition:border-color .2s}
+.amap-search-box:focus-within{border-color:#e54a00;box-shadow:0 2px 16px rgba(255,90,31,.25)}
+.amap-search-icon{font-size:15px;flex-shrink:0;opacity:.6}
+.amap-search-box input{flex:1;border:0;outline:0;font-size:14px;font-weight:600;color:#171713;background:transparent;font-family:inherit}
+.amap-search-box input::placeholder{color:#999;font-weight:400}
+.amap-search-clear{flex-shrink:0;width:22px;height:22px;border:0;border-radius:50%;background:#f0f0f0;color:#666;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.amap-search-clear:hover{background:#ff5a1f;color:#fff}
+.amap-search-loading{flex-shrink:0;font-size:12px;color:#ff5a1f;white-space:nowrap}
+.amap-suggest-list{margin-top:6px;background:#fff;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.15);overflow:hidden;max-height:280px;overflow-y:auto;border:1px solid #eee}
+.amap-suggest-item{display:flex;flex-direction:column;gap:2px;width:100%;padding:10px 14px;border:0;border-bottom:1px solid #f5f5f5;background:transparent;text-align:left;cursor:pointer;transition:background .12s;font-family:inherit}
+.amap-suggest-item:last-child{border-bottom:0}
+.amap-suggest-item:hover{background:#fff4e6}
+.amap-suggest-item b{font-size:14px;color:#171713;font-weight:700}
+.amap-suggest-item small{font-size:12px;color:#999;line-height:1.4}
+.amap-suggest-empty{padding:14px;text-align:center;font-size:13px;color:#999}
+.amap-dest-panel{position:absolute;bottom:52px;left:10px;right:10px;z-index:200;display:flex;align-items:center;gap:12px;background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 -2px 20px rgba(0,0,0,.18);border:1.5px solid #ff5a1f;animation:amap-panel-in .25s ease}
+@keyframes amap-panel-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.amap-dest-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.amap-dest-info b{font-size:15px;font-weight:800;color:#171713;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.amap-dest-info small{font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.amap-dest-distance{display:inline-block;font-size:13px;font-weight:700;color:#ff5a1f;background:#fff4e6;padding:2px 8px;border-radius:6px;margin-top:2px;align-self:flex-start}
+.amap-dest-nav{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#ff5a1f,#e54a00);color:#fff;font-size:13px;font-weight:800;padding:8px 14px;border-radius:8px;text-decoration:none;white-space:nowrap;transition:transform .12s,box-shadow .12s;box-shadow:0 2px 8px rgba(255,90,31,.3)}
+.amap-dest-nav:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,90,31,.4)}
+.amap-dest-nav:active{transform:translateY(0)}
+.amap-dest-close{flex-shrink:0;width:28px;height:28px;border:0;border-radius:50%;background:#f5f5f5;color:#666;font-size:14px;cursor:pointer;transition:background .12s}
+.amap-dest-close:hover{background:#eee;color:#333}
+.amap-pin.dest{background:#ff5a1f;border:2px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);padding:4px 8px;box-shadow:0 2px 10px rgba(255,90,31,.5)}
+.amap-pin.dest span{display:inline-block;transform:rotate(45deg);color:#fff;font-size:12px;font-weight:800}
+.amap-pin.dest b{display:none}
+.amap-shell.compact .amap-search-overlay{max-width:280px}
+.amap-shell.compact .amap-dest-panel{bottom:42px;padding:8px 12px}
+.amap-shell.compact .amap-dest-info b{font-size:13px}
+.amap-shell.compact .amap-dest-nav{font-size:12px;padding:6px 10px}
+@media(max-width:650px){
+  .amap-search-overlay{max-width:none;left:8px;right:8px}
+  .amap-dest-panel{left:8px;right:8px;flex-wrap:wrap}
+  .amap-dest-info{min-width:100%}
+}
