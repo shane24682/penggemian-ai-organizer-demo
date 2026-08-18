@@ -92,16 +92,15 @@
 
 /* =============================================================================
    UI REFRESH v2 · 2026-08-17
-   ① 自托管字体 (Maple Mono + Cascadia Code) ② 重新定义设计令牌
-   ③ 增强标题/数字/等宽数据的字体角色 ④ 加 4px 硬阴影 + 标签笔触
-   全部为附加层。回滚 = git checkout main 或删除本段即可恢复原版。
-   ============================================================================= */
+   �?自托管字�?(Maple Mono + Cascadia Code) �?重新定义设计令牌
+   �?增强标题/数字/等宽数据的字体角�?�?�?4px 硬阴�?+ 标签笔触
+   全部为附加层。回�?= git checkout main 或删除本段即可恢复原版�?   ============================================================================= */
 @font-face{font-family:"Maple Mono";font-weight:400;src:url(/fonts/MapleMono-Regular.woff2) format("woff2");font-display:swap}
 @font-face{font-family:"Maple Mono";font-weight:500;src:url(/fonts/MapleMono-Medium.woff2) format("woff2");font-display:swap}
 @font-face{font-family:"Maple Mono";font-weight:700;src:url(/fonts/MapleMono-Bold.woff2) format("woff2");font-display:swap}
 @font-face{font-family:"Cascadia Code";font-weight:400 700;src:url(/fonts/Cascadia-Code.woff2) format("woff2");font-display:swap}
 
-/* ① 设计令牌：用更暖更跳的橙色 + 纯墨 + 米白纸 */
+/* �?设计令牌：用更暖更跳的橙�?+ 纯墨 + 米白�?*/
 :root{
   --orange:#ff5a1f!important;
   --orange2:#ff7a35!important;
@@ -117,7 +116,7 @@
   --font-body:"PingFang SC","Microsoft YaHei",sans-serif!important;
 }
 
-/* ② 主体排版：英文 UI 走 Maple Mono（圆角友好），系统数据走 Cascadia */
+/* �?主体排版：英�?UI �?Maple Mono（圆角友好），系统数据走 Cascadia */
 body{font-family:var(--font-body)}
 .eyebrow,.kicker,nav button,.nav-match,.brand,.campus-pill,
 .view-heading span,.view-heading>b,.panel-tag,
@@ -143,7 +142,7 @@ body{font-family:var(--font-body)}
   letter-spacing:.4px;
 }
 
-/* ③ 系统数据 / ID / 价格 / 时间 走 Cascadia */
+/* �?系统数据 / ID / 价格 / 时间 �?Cascadia */
 .activity-card em,.activity-card b,.activity-card>i,
 .urgent-card p,.urgent-card b,
 .live-signal-strip small,.live-signal-strip b,.live-signal-strip p,
@@ -169,7 +168,7 @@ body{font-family:var(--font-body)}
   letter-spacing:.2px;
 }
 
-/* ④ 标题加粗 / 字号微调 */
+/* �?标题加粗 / 字号微调 */
 .view-heading h2,.live-heading h1,.home-recommend-head h2,
 .partner-copy h3,.friend-code-card h2,.friend-code-head h2,
 .security-head h2,.profile-copy h1,
@@ -179,7 +178,7 @@ body{font-family:var(--font-body)}
   letter-spacing:-.6px;
 }
 
-/* ⑤ 硬阴影 + 笔触（覆盖圆角模糊的旧风格） */
+/* �?硬阴�?+ 笔触（覆盖圆角模糊的旧风格） */
 .urgent-card,.activity-card,.plaza-summary,
 .safety-controls,.activity-search,.plaza-search,
 .friend-search,.friend-identity,.friend-discovery,
@@ -200,7 +199,7 @@ body{font-family:var(--font-body)}
   border:2px solid var(--paper)!important;
 }
 
-/* ⑥ 主导航 + 品牌 + 校园 pill 加重 */
+/* �?主导�?+ 品牌 + 校园 pill 加重 */
 .brand-mark{
   background:var(--orange)!important;color:#fff!important;
   border:2px solid var(--ink)!important;
@@ -216,7 +215,7 @@ body{font-family:var(--font-body)}
 }
 .campus-pill{background:var(--paper)!important;border:2px solid var(--ink)!important;color:var(--ink)!important;font-weight:700!important;box-shadow:2px 2px 0 var(--ink)!important}
 
-/* ⑦ 工作台背景：暗墨 + 极细网格 */
+/* �?工作台背景：暗墨 + 极细网格 */
 .product-intro{
   background:
     radial-gradient(circle at 12% 6%,#ff5a1f33 0,transparent 18%),
@@ -241,7 +240,7 @@ body{font-family:var(--font-body)}
 .workspace-rail .match-entry strong{color:var(--paper)!important}
 .workspace-main{background:#fff7ecfa!important;border:2px solid var(--ink)!important;box-shadow:6px 6px 0 var(--ink)!important}
 
-/* ⑧ 活动卡片：墨黑描边 + 暖色 hover */
+/* �?活动卡片：墨黑描�?+ 暖色 hover */
 .activity-icon{border:2px solid var(--ink)!important;box-shadow:2px 2px 0 var(--ink)!important}
 .activity-icon.c0{background:var(--orange)!important;color:#fff!important}
 .activity-icon.c1{background:#6444cc!important;color:#fff!important}
@@ -254,7 +253,7 @@ body{font-family:var(--font-body)}
   box-shadow:6px 6px 0 var(--ink)!important;
 }
 
-/* ⑨ onb / 测试中心 / 个人中心 加强 */
+/* �?onb / 测试中心 / 个人中心 加强 */
 .onboarding-card,.action-modal,.test-center-grid>button:last-child,
 .friend-code-card,.security-score,.profile-cover{
   border:2px solid var(--ink)!important;box-shadow:var(--hot-shadow)!important;border-radius:18px!important;
@@ -265,13 +264,13 @@ body{font-family:var(--font-body)}
 .preference-grid button.selected{background:var(--ink)!important;color:var(--orange)!important;border:2px solid var(--ink)!important;box-shadow:2px 2px 0 var(--orange)!important}
 .preference-grid button.selected i{color:var(--orange)!important}
 
-/* ⑩ 测试中心 / 紧急 / 广场头部细分 */
+/* �?测试中心 / 紧�?/ 广场头部细分 */
 .urgent-section-head h2,.live-heading h1,.home-recommend-head h2{font-family:var(--font-display)!important}
 .test-orb{box-shadow:0 0 0 12px #ff5a1f26,2px 2px 0 var(--ink)!important;border:2px solid var(--ink)!important}
 .test-orb.activity{background:var(--orange)!important;color:#fff!important}
 .test-orb.mbti{background:#fff!important;color:var(--ink)!important;border:2px solid var(--ink)!important}
 
-/* ⑪ 通用：所有卡片 hover 给点回弹 */
+/* �?通用：所有卡�?hover 给点回弹 */
 button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, background .12s ease}
 .urgent-card,.activity-card,.nav-match,.brand-mark,.save-preferences,
 .preference-grid button,.test-center-grid>button,.campus-pill{transition:transform .12s ease,box-shadow .12s ease}
@@ -279,7 +278,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
   transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)!important;
 }
 
-/* ⑫ 通用按钮：CTA 主色，幽灵按钮白底 */
+/* �?通用按钮：CTA 主色，幽灵按钮白�?*/
 .wide-button,.modal-primary,.location-summary{
   background:var(--orange)!important;color:#fff!important;
   border:2px solid var(--ink)!important;box-shadow:3px 3px 0 var(--ink)!important;
@@ -293,10 +292,10 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 }
 .outline-button:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)!important}
 
-/* ⑬ toast：黑底橙字 */
+/* �?toast：黑底橙�?*/
 .toast{background:var(--ink)!important;color:var(--orange)!important;border:2px solid var(--ink)!important;border-radius:11px!important;box-shadow:4px 4px 0 var(--orange)!important}
 
-/* ⑭ 视图 heading 标签：橙色小方块 */
+/* �?视图 heading 标签：橙色小方块 */
 .view-heading>div>span,.live-heading>div>span,.home-recommend-head>div>span,
 .urgent-section-head span,.view-heading span{
   background:var(--orange)!important;color:#fff!important;
@@ -304,7 +303,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
   border:2px solid var(--ink)!important;letter-spacing:1.2px!important;
 }
 
-/* ⑮ 分类 tab 选中态加深 */
+/* �?分类 tab 选中态加�?*/
 .category-tabs button.active,.partner-tabs button.active{
   background:var(--ink)!important;color:var(--orange)!important;
   border:2px solid var(--ink)!important;box-shadow:2px 2px 0 var(--ink)!important;
@@ -312,11 +311,11 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .category-tabs button{background:var(--paper)!important;color:var(--ink)!important;border:2px solid var(--line)!important;border-radius:99px!important}
 .category-tabs button.active small{background:var(--orange)!important;color:#fff!important}
 
-/* ⑯ 个人中心 cover / 安全 score 强对比 */
+/* �?个人中心 cover / 安全 score 强对�?*/
 .profile-cover{border:2px solid var(--ink)!important;box-shadow:var(--hot-shadow)!important}
 .profile-avatar{border:4px solid var(--ink)!important;box-shadow:3px 3px 0 var(--ink)!important}
 
-/* ⑰ 保证 12 视图都能读，body 暗背景下 main 内部不会黑 */
+/* �?保证 12 视图都能读，body 暗背景下 main 内部不会�?*/
 .workspace-main,.workspace-rail,.onboarding-card,.onboarding-layer,
 .action-modal,.friend-code-card,.profile-cover,.security-score,
 .calendar-modal,.test-center-grid>button,.partner-content,
@@ -324,10 +323,10 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .workspace-main *{color:inherit}
 .workspace-main button,.workspace-main select,.workspace-main input{color:var(--ink)}
 
-/* ⑱ onb 暗色蒙层 / 模态蒙层不要太黑 */
+/* �?onb 暗色蒙层 / 模态蒙层不要太�?*/
 .onboarding-layer,.modal-layer{background:#0d0c0a99!important;backdrop-filter:blur(6px)!important}
 
-/* ⑲ 活动房间布局：群聊纵向占满 + 主副栏比例调整（chat 1.6fr : side 1fr） */
+/* �?活动房间布局：群聊纵向占�?+ 主副栏比例调整（chat 1.6fr : side 1fr�?*/
 .room-layout{grid-template-columns:1.6fr 1fr!important;gap:14px!important;min-height:560px!important;align-items:stretch!important}
 .room-main{flex:1!important;min-height:0!important;display:flex!important;flex-direction:column!important;gap:12px!important}
 .room-main>.room-chat{flex:1!important;display:flex!important;flex-direction:column!important;min-height:380px!important}
@@ -335,7 +334,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .room-main>.room-chat form{margin-top:auto!important;flex:none!important}
 .room-side{align-self:stretch!important}
 
-/* ⑳ 文本对比度修复 #1：橙底白字 CTA / 橙字浅米色按钮全部加深 */
+/* �?文本对比度修�?#1：橙底白�?CTA / 橙字浅米色按钮全部加�?*/
 .departure-card>.calendar-actions .mobile-calendar-button{background:var(--ink)!important;color:#fff!important;border-color:var(--ink)!important;font-weight:800!important;padding:9px 7px!important;font-size:6px!important;letter-spacing:.3px!important}
 .departure-card>.calendar-actions .mobile-calendar-button:hover{background:#1f1e1b!important}
 .profile-status.unverified{background:var(--ink)!important;color:#fff!important;font-weight:800!important;letter-spacing:.3px!important;border:0!important}
@@ -343,7 +342,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .brand em{background:var(--ink)!important;color:#fff!important;border:0!important;letter-spacing:.5px!important}
 .idea-input>span,.activity-search>span,.plaza-search>span{background:var(--orange)!important;color:#fff!important;font-weight:900!important}
 
-/* ㉑ 文本对比度修复 #2：白字 on 橙底（3.12:1）→ 改用 #e54a00（4.0:1，过 AA-large 3:1） */
+/* �?文本对比度修�?#2：白�?on 橙底�?.12:1）→ 改用 #e54a00�?.0:1，过 AA-large 3:1�?*/
 .simulate-finish{background:#e54a00!important;color:#fff!important;font-weight:900!important;letter-spacing:.5px!important;box-shadow:3px 3px 0 #0d0c0a!important}
 .invite-demo-actions button{background:#e54a00!important;color:#fff!important;font-weight:900!important}
 .icebreaker-card button.selected{background:#e54a00!important;color:#fff!important;font-weight:900!important}
@@ -357,10 +356,10 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .onboarding-mark{background:#e54a00!important;color:#fff!important;font-weight:900!important}
 .save-preferences{background:#e54a00!important;color:#fff!important;font-weight:900!important}
 
-/* ㉒ 暗色卡片小字提升可读性（#aaa on #1f1e1b → #d4d4d4） */
+/* �?暗色卡片小字提升可读性（#aaa on #1f1e1b �?#d4d4d4�?*/
 .ai-announcement p,.invite-demo-actions p,.post-success p{color:#d4d4d4!important}
 
-/* ㉓ 群聊消息文字加大、行高提升，呼应"chat 区域放大"诉求 */
+/* �?群聊消息文字加大、行高提升，呼应"chat 区域放大"诉求 */
 .room-main>.room-chat .ai-message i,.room-main>.room-chat .member-message i{width:30px!important;height:30px!important;font-size:8px!important}
 .room-main>.room-chat .ai-message p,.room-main>.room-chat .member-message p{font-size:8px!important;line-height:1.55!important;padding:8px 11px!important}
 .room-main>.room-chat .message-list b{font-size:8px!important}
@@ -368,7 +367,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .room-main>.room-chat input::placeholder{color:#a8a098}
 .room-main>.room-chat form button{font-size:8px!important;padding:10px 16px!important}
 
-/* ⑲ 活动房间布局：群聊纵向占满 + 主副栏比例调整（chat 1.6fr : side 1fr） */
+/* �?活动房间布局：群聊纵向占�?+ 主副栏比例调整（chat 1.6fr : side 1fr�?*/
 .room-layout{grid-template-columns:1.6fr 1fr!important;gap:14px!important;min-height:560px!important;align-items:stretch!important}
 .room-main{flex:1!important;min-height:0!important;display:flex!important;flex-direction:column!important;gap:12px!important}
 .room-main>.room-chat{flex:1!important;display:flex!important;flex-direction:column!important;min-height:380px!important}
@@ -376,7 +375,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .room-main>.room-chat form{margin-top:auto!important;flex:none!important}
 .room-side{align-self:stretch!important}
 
-/* ⑳ 文本对比度修复 #1：橙底白字 CTA / 橙字浅米色按钮全部加深 */
+/* �?文本对比度修�?#1：橙底白�?CTA / 橙字浅米色按钮全部加�?*/
 .departure-card>.calendar-actions .mobile-calendar-button{background:var(--ink)!important;color:#fff!important;border-color:var(--ink)!important;font-weight:800!important;padding:9px 7px!important;font-size:6px!important;letter-spacing:.3px!important}
 .departure-card>.calendar-actions .mobile-calendar-button:hover{background:#1f1e1b!important}
 .profile-status.unverified{background:var(--ink)!important;color:#fff!important;font-weight:800!important;letter-spacing:.3px!important;border:0!important}
@@ -384,7 +383,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .brand em{background:var(--ink)!important;color:#fff!important;border:0!important;letter-spacing:.5px!important}
 .idea-input>span,.activity-search>span,.plaza-search>span{background:var(--orange)!important;color:#fff!important;font-weight:900!important}
 
-/* ㉑ 文本对比度修复 #2：白字 on 橙底（3.12:1）→ 改用 #e54a00（4.0:1，过 AA-large 3:1） */
+/* �?文本对比度修�?#2：白�?on 橙底�?.12:1）→ 改用 #e54a00�?.0:1，过 AA-large 3:1�?*/
 .simulate-finish{background:#e54a00!important;color:#fff!important;font-weight:900!important;letter-spacing:.5px!important;box-shadow:3px 3px 0 #0d0c0a!important}
 .invite-demo-actions button{background:#e54a00!important;color:#fff!important;font-weight:900!important}
 .icebreaker-card button.selected{background:#e54a00!important;color:#fff!important;font-weight:900!important}
@@ -398,10 +397,10 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .onboarding-mark{background:#e54a00!important;color:#fff!important;font-weight:900!important}
 .save-preferences{background:#e54a00!important;color:#fff!important;font-weight:900!important}
 
-/* ㉒ 暗色卡片小字提升可读性（#aaa on #1f1e1b → #d4d4d4） */
+/* �?暗色卡片小字提升可读性（#aaa on #1f1e1b �?#d4d4d4�?*/
 .ai-announcement p,.invite-demo-actions p,.post-success p{color:#d4d4d4!important}
 
-/* ㉓ 群聊消息文字加大、行高提升，呼应"chat 区域放大"诉求 */
+/* �?群聊消息文字加大、行高提升，呼应"chat 区域放大"诉求 */
 .room-main>.room-chat .ai-message i,.room-main>.room-chat .member-message i{width:30px!important;height:30px!important;font-size:8px!important}
 .room-main>.room-chat .ai-message p,.room-main>.room-chat .member-message p{font-size:8px!important;line-height:1.55!important;padding:8px 11px!important}
 .room-main>.room-chat .message-list b{font-size:8px!important}
@@ -410,12 +409,10 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .room-main>.room-chat form button{font-size:8px!important;padding:10px 16px!important}
 
 /* ============================================
-   ㉔ 无黑底修正 v3（用户要求：不用黑底）
-   原则：深色背景一律改为 橙底白字 或 浅米底深字；
-   6px 以下小字统一提升到 8px 以上保证可读。
-   ============================================ */
+   �?无黑底修�?v3（用户要求：不用黑底�?   原则：深色背景一律改�?橙底白字 �?浅米底深字；
+   6px 以下小字统一提升�?8px 以上保证可读�?   ============================================ */
 
-/* --- 1. 活动室黑条按钮 → 橙底白字 + 字号加大 --- */
+/* --- 1. 活动室黑条按�?�?橙底白字 + 字号加大 --- */
 .room-chat form button,.room-panel>button{
   background:#e54a00!important;
   color:#fff!important;
@@ -428,7 +425,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
   background:#fff!important;color:#a64f42!important;border:1px solid #edd0cc!important;font-size:9px!important
 }
 
-/* --- 2. post-success / ai-announcement / invite-demo 暗卡 → 浅米底深字 --- */
+/* --- 2. post-success / ai-announcement / invite-demo 暗卡 �?浅米底深�?--- */
 .post-success{
   background:#fff3ea!important;
   color:var(--ink)!important;
@@ -473,7 +470,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
   font-size:8px!important;color:#8e817a!important
 }
 
-/* --- 4. 撤销黑底覆盖：品牌徽标 / 紧急卡 / 未认证状态 / toast --- */
+/* --- 4. 撤销黑底覆盖：品牌徽�?/ 紧急卡 / 未认证状�?/ toast --- */
 .brand em{background:#fff0e8!important;color:#e54a00!important;border:0!important;font-weight:800!important}
 .campus-pill{background:#fff!important;border:1px solid var(--line)!important;color:var(--ink)!important}
 .campus-pill span,.campus-pill small,.campus-pill em{color:#e54a00!important;font-size:12px!important;font-weight:700!important}
@@ -497,7 +494,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
   font-weight:700!important
 }
 
-/* --- 5. 活动室小字整体提升（5-6px → 7-8px）--- */
+/* --- 5. 活动室小字整体提升（5-6px �?7-8px�?-- */
 .room-confirmed>div:first-child span,.room-section-title span{font-size:8px!important}
 .room-confirmed b,.room-section-title b{font-size:9px!important}
 .fee-detail>p{font-size:8px!important}
@@ -513,7 +510,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .room-chat .message-list b{font-size:8px!important}
 .checkin-code b{color:#e54a00!important}
 
-/* ㉕ 修复 step 5 复盘区 mutual-button 黑底 + 字号 */
+/* �?修复 step 5 复盘�?mutual-button 黑底 + 字号 */
 .mutual-button{background:#e54a00!important;color:#fff!important;font-size:9px!important;padding:10px!important;border:0!important}
 .mutual-wait button{background:#e54a00!important;color:#fff!important;font-size:8px!important;padding:8px 12px!important;border:0!important}
 .mutual-wait b,.mutual-done b{font-size:9px!important}
@@ -523,12 +520,11 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .reconnect-card>span,.review-card>span{font-size:7px!important}
 .reconnect-card h3,.review-card h3{font-size:11px!important}
 
-/* ㉖ 全面去黑底 / 强对比度修正 v4
-   用户反馈「黑色不行，用棕色」 — 把所有黑底改为深棕 #3a261a，
-   暗块里的所有文字强制成米白 / 浅米色。 */
+/* �?全面去黑�?/ 强对比度修正 v4
+   用户反馈「黑色不行，用棕色�?�?把所有黑底改为深�?#3a261a�?   暗块里的所有文字强制成米白 / 浅米色�?*/
 :root{--brown:#3a261a;--brown2:#5a3a26;--cream:#fff4e6}
 
-/* --- 1. 城市街拍约拍等 idea-input 提交按钮强制橙底白字 --- */
+/* --- 1. 城市街拍约拍�?idea-input 提交按钮强制橙底白字 --- */
 .idea-input button,.wide-button{
   background:#e54a00!important;
   color:#fff!important;
@@ -537,7 +533,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
   border:0!important
 }
 
-/* --- 2. profile 校园信任档案 黑卡 → 深棕卡 + 米白字 --- */
+/* --- 2. profile 校园信任档案 黑卡 �?深棕�?+ 米白�?--- */
 .profile-trust-strip{
   background:linear-gradient(135deg,#3a261a,#2a1808)!important;
   color:#fff4e6!important;
@@ -559,7 +555,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .profile-copy em{color:#d4b896!important;border-color:rgba(255,244,230,.3)!important}
 .profile-stats span{color:#d4b896!important}
 
-/* --- 4. MBTI 测试卡：黑渐变 → 深棕渐变，h3/p 强制白 --- */
+/* --- 4. MBTI 测试卡：黑渐�?�?深棕渐变，h3/p 强制�?--- */
 .test-center-grid>button:last-child{
   background:linear-gradient(145deg,#3a261a,#1a0e04)!important;
   color:#fff4e6!important;
@@ -571,7 +567,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .test-center-grid>button:last-child>div:last-child{border-color:rgba(255,244,230,.2)!important}
 .test-center-grid>button:last-child>div:last-child b{color:#ff9d78!important}
 
-/* --- 5. how 介绍区（4个步骤卡）：深棕背景，米白文字 --- */
+/* --- 5. how 介绍区（4个步骤卡）：深棕背景，米白文�?--- */
 .how{background:#2a1808!important;color:#fff4e6!important}
 .how h3,.how p{color:#fff4e6!important}
 .step-grid article{
@@ -587,7 +583,7 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .comparison{background:#1a0e04!important;color:#fff4e6!important;border:1px solid #3a261a!important}
 .comparison *{color:#fff4e6!important}
 
-/* --- 6. 机构接入（partners）深色信息卡：深棕 + 米白 --- */
+/* --- 6. 机构接入（partners）深色信息卡：深�?+ 米白 --- */
 .org-preview{background:linear-gradient(160deg,#3a261a,#1a0e04)!important;color:#fff4e6!important;border-color:#5a3a26!important}
 .org-preview *{color:#fff4e6!important}
 .org-head b,.org-head p{color:#fff4e6!important}
@@ -618,7 +614,7 @@ button[style*="background:#000"],button[style*="background: black"]{background:#
 .composer .send,.sent{background:#e54a00!important}
 
 
-/* --- ㉗ 全屏宽度：取消 1160/1320px 内容宽度上限，内容撑满屏幕 --- */
+/* --- �?全屏宽度：取�?1160/1320px 内容宽度上限，内容撑满屏�?--- */
 .product-intro{
   padding:60px clamp(24px,3vw,48px) 86px!important
 }
@@ -634,7 +630,7 @@ button[style*="background:#000"],button[style*="background: black"]{background:#
   .recommendation-grid{grid-template-columns:repeat(3,1fr)!important}
 }
 
-/* --- ㉘ 活动广场合并到匹配页：样式 --- */
+/* --- �?活动广场合并到匹配页：样�?--- */
 .plaza-merge{
   margin-top:28px;padding-top:22px;
   border-top:2px dashed #e8d8c8;
@@ -662,17 +658,16 @@ button[style*="background:#000"],button[style*="background: black"]{background:#
   min-height:130px;
 }
 
-/* ㉗ 分类切换滚动锚定修复：React 重渲染替换卡片网格时，Chrome 滚动锚点节点
-   被移除导致页面跳到底部。文档级禁用 scroll anchoring，保持滚动位置不变。 */
+/* �?分类切换滚动锚定修复：React 重渲染替换卡片网格时，Chrome 滚动锚点节点
+   被移除导致页面跳到底部。文档级禁用 scroll anchoring，保持滚动位置不变�?*/
 html{overflow-anchor:none!important}
 .plaza-merge .activity-grid,.plaza-merge .activity-card,.plaza-merge .recommendation-grid,
 .plaza-merge .activity-groups,.plaza-merge .activity-section,
 .search-results .activity-grid,.recommendation-grid,.activity-groups,.activity-section,
 .recommendation-grid .activity-card,.activity-section .activity-card,
 .recommend-toolbar,.plaza-summary{overflow-anchor:none}
-/* ㉘ 放宽搜索框+活动广场宽度：原 .search-panel{max-width:900px;margin:auto}
-   在宽屏下左右大量留白，搜索框和卡片都被锁在 900px 居中。改为充满父容器、
-   活动卡 4 列填满、利用 .demo-content 内的全部可用空间。 */
+/* �?放宽搜索�?活动广场宽度：原 .search-panel{max-width:900px;margin:auto}
+   在宽屏下左右大量留白，搜索框和卡片都被锁�?900px 居中。改为充满父容器�?   活动�?4 列填满、利�?.demo-content 内的全部可用空间�?*/
 .search-panel{max-width:none;margin:0}
 .match-view .plaza-merge .activity-grid{grid-template-columns:repeat(4,1fr);gap:14px}
 .match-view .plaza-merge .recommendation-grid{grid-template-columns:repeat(4,1fr)!important;gap:14px}
@@ -681,4 +676,24 @@ html{overflow-anchor:none!important}
 .match-view .plaza-merge .activity-card p{font-size:9.5px;line-height:1.5}
 .match-view .plaza-merge .activity-icon{width:38px;height:38px;font-size:14px}
 .activity-search,.plaza-search{padding:11px 14px}
-.activity-search input,.plaza-search input{font-size:14px}
+.activity-search input,.plaza-search input{font-size:14px}/* �?删除 LIVE CAMPUS SIGNALS 后填满：紧急席�?为你推荐卡加大，grid 4 列填�?*/
+.home-view.live-home{min-height:calc(100vh - 80px);padding-bottom:60px}
+.home-view .urgent-section-head{margin:32px 0 18px}
+.home-view .urgent-section-head h2{font-size:30px!important}
+.home-view .urgent-grid{gap:18px!important;margin-bottom:36px}
+.home-view .urgent-card{padding:22px 22px 18px!important;min-height:200px}
+.home-view .urgent-card h2{font-size:22px!important;line-height:1.25!important;margin:10px 0 6px}
+.home-view .urgent-card p{font-size:13px!important;margin-bottom:18px}
+.home-view .urgent-card .seat-line{margin:14px 0 16px;height:8px}
+.home-view .urgent-card .seat-line b{font-size:15px!important}
+.home-view .urgent-card small{font-size:12px!important;font-weight:700}
+.home-view .home-recommend-head{margin:28px 0 18px}
+.home-view .home-recommend-head h2{font-size:28px!important}
+.home-view .home-recommend-grid{gap:18px!important}
+.home-view .home-recommend-grid>button{padding:22px 22px!important;min-height:160px;align-items:center}
+.home-view .home-recommend-grid .activity-icon{width:56px!important;height:56px!important;font-size:22px!important}
+.home-view .home-recommend-grid h3{font-size:18px!important}
+.home-view .home-recommend-grid p{font-size:12.5px!important;line-height:1.55}
+@media (min-width:1700px){
+  .home-view .urgent-grid,.home-view .home-recommend-grid{grid-template-columns:repeat(4,1fr)!important}
+}
