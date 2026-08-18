@@ -408,3 +408,117 @@ button:not(:disabled){transition:transform .12s ease, box-shadow .12s ease, back
 .room-main>.room-chat input{font-size:9px!important;padding:10px 12px!important}
 .room-main>.room-chat input::placeholder{color:#a8a098}
 .room-main>.room-chat form button{font-size:8px!important;padding:10px 16px!important}
+
+/* ============================================
+   ㉔ 无黑底修正 v3（用户要求：不用黑底）
+   原则：深色背景一律改为 橙底白字 或 浅米底深字；
+   6px 以下小字统一提升到 8px 以上保证可读。
+   ============================================ */
+
+/* --- 1. 活动室黑条按钮 → 橙底白字 + 字号加大 --- */
+.room-chat form button,.room-panel>button{
+  background:#e54a00!important;
+  color:#fff!important;
+  font-size:9px!important;
+  font-weight:800!important;
+  padding:9px 12px!important;
+  letter-spacing:.3px
+}
+.room-safety>button:last-child{
+  background:#fff!important;color:#a64f42!important;border:1px solid #edd0cc!important;font-size:9px!important
+}
+
+/* --- 2. post-success / ai-announcement / invite-demo 暗卡 → 浅米底深字 --- */
+.post-success{
+  background:#fff3ea!important;
+  color:var(--ink)!important;
+  border:1px solid #ffd9c2!important
+}
+.post-success>span:first-child{
+  background:#e54a00!important;color:#fff!important
+}
+.post-success em{color:#c2511a!important;font-size:8px!important}
+.post-success h2{color:var(--ink)!important;font-size:20px!important}
+.post-success p{color:#7a6b62!important;font-size:9px!important;line-height:1.6!important}
+
+.ai-announcement{
+  background:#fff3ea!important;
+  color:var(--ink)!important;
+  border:1px solid #ffd9c2!important
+}
+.ai-announcement b{color:var(--ink)!important;font-size:9px!important}
+.ai-announcement p{color:#7a6b62!important;font-size:8px!important;line-height:1.6!important}
+.ai-announcement em{color:#c2511a!important;font-size:8px!important}
+
+.invite-demo-actions{
+  background:#fff3ea!important;
+  color:var(--ink)!important;
+  border:1px solid #ffd9c2!important
+}
+.invite-demo-actions b,.invite-demo-actions h3{color:var(--ink)!important}
+.invite-demo-actions p{color:#7a6b62!important;font-size:8px!important;line-height:1.6!important}
+.invite-demo-actions button{background:#e54a00!important;color:#fff!important;font-size:9px!important;font-weight:800!important}
+
+/* --- 3. 日历按钮：橙底白字，字号加大 --- */
+.mobile-calendar-button,.departure-card>.calendar-actions button{
+  background:#e54a00!important;
+  color:#fff!important;
+  border:0!important;
+  font-size:9px!important;
+  font-weight:800!important;
+  padding:9px!important;
+  border-radius:8px!important
+}
+.departure-card>.calendar-actions small{
+  font-size:8px!important;color:#8e817a!important
+}
+
+/* --- 4. 撤销黑底覆盖：品牌徽标 / 紧急卡 / 未认证状态 / toast --- */
+.brand em{background:#fff0e8!important;color:#e54a00!important;border:0!important;font-weight:800!important}
+.campus-pill{background:#fff!important;border:1px solid var(--line)!important;color:var(--ink)!important}
+.campus-pill span,.campus-pill small,.campus-pill em{color:#e54a00!important;font-size:12px!important;font-weight:700!important}
+.urgent-card.hot{
+  background:linear-gradient(135deg,#ff5a1f,#ff8a4d)!important;
+  color:#fff!important;
+  border:0!important
+}
+.urgent-card.hot *{color:#fff!important}
+.urgent-card.hot .urgent-top span{background:rgba(255,255,255,.25)!important;color:#fff!important}
+.profile-status.unverified{
+  background:#fff0e8!important;
+  color:#c2511a!important;
+  border:1px solid #ffd9c2!important
+}
+.toast{
+  background:#e54a00!important;
+  color:#fff!important;
+  border:0!important;
+  font-size:13px!important;
+  font-weight:700!important
+}
+
+/* --- 5. 活动室小字整体提升（5-6px → 7-8px）--- */
+.room-confirmed>div:first-child span,.room-section-title span{font-size:8px!important}
+.room-confirmed b,.room-section-title b{font-size:9px!important}
+.fee-detail>p{font-size:8px!important}
+.departure-card>p{font-size:8px!important;line-height:1.5!important}
+.checkin-code span,.checkin-code small{font-size:8px!important}
+.venue-vote b{font-size:8px!important}
+.venue-vote p{font-size:7px!important}
+.venue-vote>button>span{font-size:8px!important}
+.replacement b{font-size:8px!important}
+.replacement p{font-size:7px!important;line-height:1.5!important}
+.confirmed-members span{font-size:8px!important}
+.room-chat .message-list p{font-size:8px!important;line-height:1.6!important}
+.room-chat .message-list b{font-size:8px!important}
+.checkin-code b{color:#e54a00!important}
+
+/* ㉕ 修复 step 5 复盘区 mutual-button 黑底 + 字号 */
+.mutual-button{background:#e54a00!important;color:#fff!important;font-size:9px!important;padding:10px!important;border:0!important}
+.mutual-wait button{background:#e54a00!important;color:#fff!important;font-size:8px!important;padding:8px 12px!important;border:0!important}
+.mutual-wait b,.mutual-done b{font-size:9px!important}
+.mutual-wait p,.mutual-done p{font-size:8px!important;line-height:1.5!important}
+.review-card>small{font-size:7px!important;line-height:1.5!important}
+.review-tags button{font-size:7px!important}
+.reconnect-card>span,.review-card>span{font-size:7px!important}
+.reconnect-card h3,.review-card h3{font-size:11px!important}
