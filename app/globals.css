@@ -661,3 +661,12 @@ button[style*="background:#000"],button[style*="background: black"]{background:#
 .match-view .plaza-merge .activity-card{
   min-height:130px;
 }
+
+/* ㉗ 分类切换滚动锚定修复：React 重渲染替换卡片网格时，Chrome 滚动锚点节点
+   被移除导致页面跳到底部。文档级禁用 scroll anchoring，保持滚动位置不变。 */
+html{overflow-anchor:none!important}
+.plaza-merge .activity-grid,.plaza-merge .activity-card,.plaza-merge .recommendation-grid,
+.plaza-merge .activity-groups,.plaza-merge .activity-section,
+.search-results .activity-grid,.recommendation-grid,.activity-groups,.activity-section,
+.recommendation-grid .activity-card,.activity-section .activity-card,
+.recommend-toolbar,.plaza-summary{overflow-anchor:none}
