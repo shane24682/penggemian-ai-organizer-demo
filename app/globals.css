@@ -841,3 +841,71 @@ html{overflow-anchor:none!important}
 .lock-cost span{font-size:10px!important}
 .pre-match-privacy b{font-size:10px!important}
 .pre-match-privacy span{font-size:9px!important}
+
+/* ============================================================
+   全站手机端适配（≤850px 生效，桌面端完全不受影响）
+   注意：本块必须放在文件末尾，优先级才能覆盖前面的基础规则
+   ============================================================ */
+@media(max-width:850px){
+  /* --- 工作台骨架：侧栏 + 内容 → 单列堆叠 --- */
+  .workspace-frame{grid-template-columns:1fr!important;gap:12px!important;min-width:0}
+  .workspace-frame>*{min-width:0}
+
+  /* --- 侧栏：竖排图标栏 → 横向吸顶导航条 --- */
+  .workspace-rail{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;padding:7px 8px!important;-webkit-overflow-scrolling:touch;position:sticky;top:6px;z-index:60;backdrop-filter:blur(20px)}
+  .workspace-rail::-webkit-scrollbar{display:none}
+  .workspace-rail button{flex:none!important;display:grid!important;place-items:center!important;gap:3px!important;padding:7px 8px!important;font-size:8px!important;white-space:nowrap!important;min-width:48px}
+  .workspace-rail button>span{font-size:12px!important}
+  .workspace-rail button strong{font-size:8px!important;white-space:nowrap!important}
+  .workspace-rail .rail-logo{margin:0!important;width:36px!important;height:36px!important;flex:none!important}
+  .workspace-rail i{display:none!important}
+
+  /* --- 主内容区：全宽 + 允许子内容收缩（防裁切关键） --- */
+  .workspace-main{min-width:0!important;padding:18px 14px!important;overflow:hidden}
+  .workspace-main>*,.workspace-view,.workspace-view>*{min-width:0}
+  .workspace-top{flex-wrap:wrap;gap:8px}
+
+  /* --- 匹配流程：左步骤栏 + 右面板 → 单列 --- */
+  .demo-shell{grid-template-columns:1fr!important}
+  .match-view .demo-shell{grid-template-columns:1fr!important;min-width:0}
+  .demo-shell aside{flex-direction:row!important;overflow-x:auto!important;gap:6px!important;padding:10px!important;min-width:0}
+  .demo-shell aside>button{flex:none!important;display:inline-flex!important;align-items:center!important;gap:5px!important;padding:7px 10px!important;font-size:9px!important;white-space:nowrap!important}
+  .demo-shell .agent-info{display:none!important}
+  .demo-content{padding:22px 16px!important;min-width:0}
+  .demo-content .panel{min-width:0;padding:20px 14px!important}
+  .demo-content .panel h3{font-size:18px}
+  .demo-content .panel p{font-size:9px}
+
+  /* --- 各视图内部网格：多列 → 单列 --- */
+  .step-grid,.candidate-list,.invite-venues,.reconnect-people,.safety-rule-grid,.invite-summary{grid-template-columns:1fr!important}
+  .dashboard-grid{grid-template-columns:1fr!important}
+  .recommendation-grid{grid-template-columns:1fr!important}
+  .activity-search{flex-wrap:wrap}
+  .activity-search input{min-width:0!important;flex:1 1 140px}
+
+  /* --- 活动卡片网格：强制降列数 + 卡片可收缩（覆盖后部的 repeat(4,1fr)） --- */
+  .activity-card{min-width:0!important}
+  .activity-card h3,.activity-card p,.activity-card b,.activity-card small{white-space:normal!important;word-break:break-word!important}
+  .match-view .plaza-merge .activity-grid{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .plaza-view .activity-grid{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .plaza-merge .activity-grid{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .search-results .activity-grid{grid-template-columns:1fr 1fr!important;gap:8px!important}
+
+  /* --- 组织/伙伴页防裁切 --- */
+  .partner-shell,.partner-content,.partner-copy,.org-preview{min-width:0!important}
+  .partner-content{flex-direction:column!important}
+  .partner-benefits{grid-template-columns:1fr!important}
+
+  /* --- 表单与按钮通用防溢出 --- */
+  .workspace-main button{max-width:100%}
+  .workspace-main input,.workspace-main select{max-width:100%!important;min-width:0!important}
+  .onboarding-actions{flex-direction:column}
+}
+
+@media(max-width:560px){
+  .workspace-main{padding:14px 10px!important}
+  .demo-content{padding:16px 10px!important}
+  .demo-content .panel{padding:16px 10px!important}
+  .workspace-rail button{min-width:44px!important;padding:6px 6px!important}
+  .view-heading h2{font-size:21px!important}
+}
