@@ -14,6 +14,9 @@ export type MatchCandidate = {
   lat: number;
   lng: number;
   avatar: string;
+  roles?: string[];
+  verifiedSkills?: string[];
+  weeklyHours?: number;
 };
 
 export type MatchRequest = {
@@ -25,6 +28,8 @@ export type MatchRequest = {
   campus: string;
   personalityTags: string[];
   location?: {lat:number;lng:number};
+  requiredRole?: string;
+  requiresVerifiedSkill?: boolean;
 };
 
 export type ScoredCandidate = MatchCandidate & {
@@ -52,6 +57,11 @@ export const demoCandidates: MatchCandidate[] = [
   {id:"u10",name:"陆川",campus:"杭州大学城",categories:["轻娱乐","运动"],interests:["网吧5V5开黑","篮球3V3","保龄球"],availability:["周六 15:00","周六 19:00"],level:"进阶",socialTags:["竞技型","组队型"],trustRate:.9,distanceKm:2.7,lat:30.3041,lng:120.3308,avatar:"陆"},
   {id:"u11",name:"苏木",campus:"杭州大学城",categories:["兴趣技能","学习充电"],interests:["尤克里里速成课","手机短视频剪辑","PPT设计工坊"],availability:["周六 15:00","周日 10:00"],level:"新手",socialTags:["慢热","创作型"],trustRate:.98,distanceKm:1.4,lat:30.3210,lng:120.3530,avatar:"苏"},
   {id:"u12",name:"韩冬",campus:"杭州大学城",categories:["社团社交","户外探索"],interests:["动漫Cosplay外拍","寻找城市地标打卡","电竞赛事集体观赛"],availability:["周六 19:00","周日 10:00"],level:"入门",socialTags:["同好型","探索欲"],trustRate:.96,distanceKm:2,lat:30.3074,lng:120.3722,avatar:"韩"},
+  {id:"u13",name:"程予安",campus:"杭州大学城",categories:["竞赛组队","技能共学"],interests:["数学建模竞赛组队","ACM 算法刷题小组"],availability:["周六 15:00","周六 19:00"],level:"进阶",socialTags:["目标感","行动派"],trustRate:.98,distanceKm:1.5,lat:30.3134,lng:120.3512,avatar:"程",roles:["Python 编程","建模求解"],verifiedSkills:["算法训练营结业","GitHub 作品集"],weeklyHours:12},
+  {id:"u14",name:"顾思齐",campus:"杭州大学城",categories:["竞赛组队","证书共学"],interests:["数学建模竞赛组队","CPA 财管晚间共学"],availability:["周六 19:00","周日 10:00"],level:"进阶",socialTags:["表达型","目标感"],trustRate:.97,distanceKm:2.2,lat:30.3072,lng:120.3577,avatar:"顾",roles:["论文写作","数据分析"],verifiedSkills:["建模校赛参赛证明","课程成绩单"],weeklyHours:10},
+  {id:"u15",name:"叶知行",campus:"杭州大学城",categories:["竞赛组队","长期共学"],interests:["商业案例大赛组队","挑战杯项目匹配"],availability:["周六 15:00","周日 10:00"],level:"入门",socialTags:["组队型","目标感"],trustRate:.96,distanceKm:1.9,lat:30.3105,lng:120.3435,avatar:"叶",roles:["行业研究","路演表达"],verifiedSkills:["咨询社案例作品","演讲比赛证书"],weeklyHours:8},
+  {id:"u16",name:"宋念",campus:"杭州大学城",categories:["证书共学","长期共学"],interests:["CPA 财管晚间共学","考研监督自习组"],availability:["周六 19:00","周日 10:00"],level:"进阶",socialTags:["目标感","慢热"],trustRate:.99,distanceKm:1.1,lat:30.3153,lng:120.3498,avatar:"宋",roles:["CPA 财管","打卡监督"],verifiedSkills:["CPA 已过科目证明","学习计划"],weeklyHours:14},
+  {id:"u17",name:"陆言",campus:"杭州大学城",categories:["竞赛组队","技能共学"],interests:["商业案例大赛组队","挑战杯项目匹配"],availability:["周六 15:00","周六 19:00"],level:"进阶",socialTags:["行动派","表达型"],trustRate:.95,distanceKm:2.5,lat:30.3048,lng:120.3612,avatar:"陆",roles:["产品设计","项目运营"],verifiedSkills:["产品作品集","校级创新项目成员证明"],weeklyHours:9},
 ];
 
 const haversineKm = (a:{lat:number;lng:number}, b:{lat:number;lng:number}) => {
@@ -87,6 +97,9 @@ export function scoreCandidate(request: MatchRequest, candidate: MatchCandidate)
   score += Math.round(candidate.trustRate * 7);
   if (candidate.trustRate >= .95) reasons.push("高守约率");
   if (distanceKm <= 2) { score += 5; reasons.push("距离较近"); }
+  if (request.requiredRole && candidate.roles?.includes(request.requiredRole)) { score += 22; reasons.push("角色能力匹配"); }
+  if (request.requiresVerifiedSkill && candidate.verifiedSkills?.length) { score += 12; reasons.push("能力材料已核验"); }
+  if (request.requiresVerifiedSkill && (candidate.weeklyHours || 0) >= 8) { score += 6; reasons.push("投入时间达标"); }
 
   return {...candidate, distanceKm, score: Math.min(100, score), reasons};
 }
@@ -94,6 +107,7 @@ export function scoreCandidate(request: MatchRequest, candidate: MatchCandidate)
 export function matchUsers(request: MatchRequest, pool = demoCandidates): MatchPlan {
   const ranked = pool
     .filter(candidate=>candidate.trustRate >= .88)
+    .filter(candidate=>!request.requiresVerifiedSkill || Boolean(candidate.verifiedSkills?.length && (candidate.weeklyHours || 0) >= 6))
     .map(candidate=>scoreCandidate(request, candidate))
     .sort((a,b)=>b.score-a.score || b.trustRate-a.trustRate);
   const selected = ranked.slice(0, Math.max(1, request.seats - 1));
@@ -104,6 +118,6 @@ export function matchUsers(request: MatchRequest, pool = demoCandidates): MatchP
     selected,
     backups,
     averageScore,
-    factors:["同校身份","活动/品类兴趣","可用时间","水平目标","相处偏好","守约与距离"],
+    factors:["同校身份","活动/品类兴趣","可用时间","水平目标","相处偏好","守约与距离",...(request.requiresVerifiedSkill?["能力材料核验","项目角色匹配","投入时间"]:[])],
   };
 }
