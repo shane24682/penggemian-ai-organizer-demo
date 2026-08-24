@@ -75,6 +75,10 @@ export default function InvitationMatch({
   const [userVenueVote, setUserVenueVote] = useState<string | null>(null);
   const counts = useMemo(() => invitationCounts(round), [round]);
   const ready = counts.confirmed >= seats;
+  const sameFrequencyTargets = useMemo(
+    () => round.candidates.filter(candidate => candidate.reasons.some(reason => reason.startsWith("同频标签："))),
+    [round.candidates],
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => setSecondsLeft(value => Math.max(0, value - 1)), 1000);
@@ -122,7 +126,7 @@ export default function InvitationMatch({
 
   return <div className="invitation-match">
     <div className="invite-head">
-      <div><span>STEP 03 · DOUBLE CONSENT</span><h3>AI推荐了候选人，正在分别邀请</h3><p>{level}{activity} · {time} · 满 {seats} 人后才正式成局</p></div>
+      <div><span>STEP 03 · DOUBLE CONSENT</span><h3>AI推荐同频候选人，正在分别邀请</h3><p>{level}{activity} · {time} · 满 {seats} 人后才正式成局</p></div>
       <div className="invite-clock"><small>本轮邀请剩余</small><b>{clock(secondsLeft)}</b></div>
     </div>
 
@@ -134,6 +138,11 @@ export default function InvitationMatch({
     </div>
 
     <div className="invite-flow"><span className="done">算法推荐</span><i>→</i><span className={ready ? "done" : "active"}>分别邀请</span><i>→</i><span className={ready ? "done" : ""}>达到阈值</span><i>→</i><span className={ready ? "active" : ""}>锁定场地</span></div>
+
+    <div className="same-frequency-push">
+      <b>已向 {sameFrequencyTargets.length} 位同频同学主动推送邀请</b>
+      <span>按个人标签语义、活动兴趣、可参与时间、能力水平和守约记录综合排序；对方可确认、拒绝或忽略。</span>
+    </div>
 
     <div className="candidate-list">
       {round.candidates.map((person, index) => <article key={`${person.id}-${person.source}`} className={`candidate-row ${person.invitationStatus}`}>

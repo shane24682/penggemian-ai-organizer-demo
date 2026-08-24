@@ -22,7 +22,9 @@ export const createInvitationRound = (
 ): InvitationRound => ({
   candidates: selected.map((candidate, index) => ({
     ...candidate,
-    invitationStatus: index < 2 ? "confirmed" : index < 4 ? "waiting" : "queued",
+    // 匹配只负责把高适配候选人推入邀请队列，是否参加必须由对方确认。
+    // 首轮同时推送三位；其余候选人保留为可自动递补的候补。
+    invitationStatus: index < 3 ? "waiting" : "queued",
     source: "recommended",
   })),
   backups: backups.map(candidate => ({

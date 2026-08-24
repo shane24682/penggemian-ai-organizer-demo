@@ -4,7 +4,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { matchUsers } from "../lib/matching";
 import type { ScoredCandidate } from "../lib/matching";
-import { searchActivities } from "../lib/discovery";
+import { rankActivitiesForProfile, searchActivities } from "../lib/discovery";
 import { campusLocations, Coordinate, recommendVenues } from "../lib/location";
 import { downloadIcs } from "../lib/calendar";
 import { friendDirectory, searchFriends } from "../lib/friends";
@@ -20,8 +20,8 @@ import PostActivity from "../components/PostActivity";
 import SafetyControls, { AudienceRules } from "../components/SafetyControls";
 import AmapVenueMap from "../components/AmapVenueMap";
 
-type Step = 1 | 2 | 3 | 4 | 5;
-type View = "home" | "match" | "plaza" | "quiz" | "friends" | "history" | "partners" | "business" | "profile" | "friendCode" | "security" | "verification";
+type Step = 1 | 2 | 3 | 4;
+type View = "home" | "match" | "plaza" | "quiz" | "friends" | "history" | "partners" | "business" | "profile" | "friendCode" | "security" | "verification" | "tags" | "review";
 type Scene = "offline" | "online" | "study";
 
 type Activity = {
@@ -158,6 +158,15 @@ const sceneCategories: Record<Scene, string[]> = {
 
 const preferenceOptions = ["篮球3V3","羽毛球双打","飞盘争夺赛","麻将三缺一","剧本杀","Switch派对游戏","城市街拍约拍","陶艺拉坯","乐队合奏","外语角","圆桌读书会","Citywalk人文历史路线"];
 
+const defaultPersonalTags = ["神秘树洞","王者荣耀","健身达人","咖啡脑袋","INTP","数码发烧友","网络梗王"];
+const personalTagGroups = [
+  ["神秘树洞","完美主义","选择困难症","拖延症晚期","快乐小狗","动漫迷","二次元","社恐","废话输出机","小哭包","e人","i人","有腹肌","颜狗","重度声控","学霸","旅游达人","吃货","理科生","反差er","夜猫子","大学生","体育生","男高","慢热型","自来熟","纯爱战士","哈哈都会","情绪稳定","外冷内憨","超会玩","佛系","玄学","emo人","人间清醒"],
+  ["steam","王者荣耀","密室逃脱","剧本杀","switch","PS5","电竞少女","吃鸡达人","三角洲","瓦学弟","金铲铲","第五人格","打瓦打瓦","游戏搭子","资深影迷","数码发烧友","网络梗王","赛博朋克","数字游民","web3.0"],
+  ["健身达人","咖啡脑袋","P图大师","dancer","vlog生活家","K歌之王","美食活地图","扩列狂魔","灵魂画手","深夜情感电台","吹拉弹唱","猫狗双全","哈基米","考研ing","已婚人士","手艺人","追星族","旅行家","语言艺术家"],
+  ["INTJ","INTP","ENTJ","ENTP","INFJ","INFP","ENFJ","ENFP","ISTJ","ISFJ","ESTJ","ESFJ","ISTP","ISFP","ESTP","ESFP"],
+  ["商赛","商业案例","挑战杯","创新创业","CPA","金融","咨询","行业研究","路演","财务分析","论文写作","数学建模","ACM","算法","编程"],
+];
+
 const urgentEvents: Array<{name:string;current:number;total:number;time:string;place:string;urgency:string;scene:Scene}> = [
   {name:"麻将三缺一",current:3,total:4,time:"今天 19:30",place:"南门桌游店",urgency:"还差 1 人",scene:"offline"},
   {name:"王者荣耀五排速配",current:3,total:5,time:"今晚 20:30",place:"线上房间",urgency:"缺 2 个位置",scene:"online"},
@@ -210,10 +219,14 @@ export default function Home() {
   const [studyProofs, setStudyProofs] = useState<string[]>(["portfolio", "assessment"]);
   const [weeklyHours, setWeeklyHours] = useState(8);
   const [partner, setPartner] = useState("学生社团");
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [preferenceDraft, setPreferenceDraft] = useState<string[]>([]);
   const [preferences, setPreferences] = useState<string[]>([]);
   const [recommendationSeed, setRecommendationSeed] = useState(1);
+  const [personalTags, setPersonalTags] = useState<string[]>(defaultPersonalTags);
+  const [tagDraft, setTagDraft] = useState<string[]>(defaultPersonalTags);
+  const [selectedDiscoveryActivity, setSelectedDiscoveryActivity] = useState("羽毛球双打");
+  const [homeBatch, setHomeBatch] = useState(0);
   const [quizStep, setQuizStep] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<number[]>([]);
   const [testMode, setTestMode] = useState<"hub"|"activity"|"mbti">("hub");
@@ -238,7 +251,7 @@ export default function Home() {
   const [incomingFriendIds, setIncomingFriendIds] = useState<string[]>(["PG52020"]);
   const [audienceRules, setAudienceRules] = useState<AudienceRules>({sameCampus:true,womenOnly:false,friendsOnly:false,hideContacts:true});
   const [roomParticipants, setRoomParticipants] = useState<ScoredCandidate[]>([]);
-  const progress = useMemo(() => (step / 5) * 100, [step]);
+  const progress = useMemo(() => (step / 4) * 100, [step]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -249,6 +262,8 @@ export default function Home() {
         setOutgoingFriendIds(JSON.parse(localStorage.getItem("penggemian-friend-outgoing") || "[]"));
         setIncomingFriendIds(JSON.parse(localStorage.getItem("penggemian-friend-incoming") || '["PG52020"]'));
         setMbtiResult(JSON.parse(localStorage.getItem("penggemian-mbti") || "null"));
+        const savedTags = JSON.parse(localStorage.getItem("penggemian-personal-tags") || "null");
+        if (Array.isArray(savedTags) && savedTags.length) { setPersonalTags(savedTags); setTagDraft(savedTags); }
         const verification = JSON.parse(localStorage.getItem("penggemian-verification") || "null");
         if (["unverified","reviewing","verified"].includes(verification?.status)) setVerificationStatus(verification.status);
         const savedLocation = JSON.parse(localStorage.getItem("penggemian-location") || "null");
@@ -273,7 +288,7 @@ export default function Home() {
   const sceneActivityList = useMemo(() => allActivities.filter(item => (item.scene || "offline") === scene), [allActivities, scene]);
   const activeScene = (allActivities.find(item=>item.name===activity)?.scene || scene) as Scene;
   const currentScene = scenes[activeScene];
-  const searchResults = useMemo(() => searchActivities(searchQuery, sceneActivityList), [searchQuery, sceneActivityList]);
+  const searchResults = useMemo(() => searchActivities(searchQuery, sceneActivityList, personalTags), [searchQuery, sceneActivityList, personalTags]);
   const friendResults = useMemo(() => searchFriends(friendQuery), [friendQuery]);
   const friends = useMemo(() => friendDirectory.filter(profile => friendIds.includes(profile.id)), [friendIds]);
   const incomingFriends = useMemo(() => friendDirectory.filter(profile => incomingFriendIds.includes(profile.id)), [incomingFriendIds]);
@@ -302,14 +317,16 @@ export default function Home() {
     if (tags.some(tag=>["探索欲"].includes(tag))) result.add("户外探索");
     return Array.from(result);
   }, [mbtiResult]);
-  const recommendations = useMemo(() => sceneActivityList.map(item=>{
-    const exact = preferences.includes(item.name) ? 70 : 0;
-    const related = preferenceCategories.includes(item.category) ? 28 : 0;
-    const quizFit = quizReport.categories.slice(0,2).includes(item.category) ? 22 : 0;
-    const mbtiFit = mbtiCategories.includes(item.category) ? 16 : 0;
-    const hash = [...`${item.name}${recommendationSeed}`].reduce((sum,char)=>sum+char.charCodeAt(0),0)%17;
-    return {item,score:exact+related+quizFit+mbtiFit+(item.featured?10:0)+hash};
-  }).sort((a,b)=>b.score-a.score).slice(0,4).map(result=>result.item), [preferences,preferenceCategories,quizReport.categories,mbtiCategories,recommendationSeed,sceneActivityList]);
+  const recommendations = useMemo(() => rankActivitiesForProfile(sceneActivityList, personalTags, recommendationSeed).slice(0,4), [personalTags, recommendationSeed, sceneActivityList]);
+  const homeCards = useMemo(() => {
+    const batches = [
+      ["羽毛球双打","无畏契约排位组队","CPA 财管晚间共学"],
+      ["城市街拍约拍","王者荣耀五排速配","数学建模竞赛组队"],
+      ["密室逃脱","Switch 联机派对","商业案例大赛组队"],
+      ["咖啡拉花体验","英雄联盟峡谷组队","ACM 算法刷题小组"],
+    ];
+    return batches[homeBatch % batches.length].map(name=>allActivities.find(item=>item.name===name)).filter(Boolean) as Activity[];
+  }, [allActivities, homeBatch]);
 
   const currentActivity = allActivities.find(item=>item.name===activity) || activities[0];
   const roleOptions = studyRoleOptions[activity] || ["Python 编程","数据分析","论文写作","项目运营"];
@@ -323,10 +340,11 @@ export default function Home() {
     seats,
     campus:"杭州大学城",
     personalityTags:Array.from(new Set([...quizReport.tags,...(mbtiResult?.tags || [])])),
+    personalTags,
     location:userLocation,
     requiredRole: activeScene === "study" ? studyRole : undefined,
     requiresVerifiedSkill: activeScene === "study",
-  }), [activity,currentActivity.category,displayTime,level,seats,quizReport.tags,mbtiResult,userLocation,activeScene,studyRole]);
+  }), [activity,currentActivity.category,displayTime,level,seats,quizReport.tags,mbtiResult,personalTags,userLocation,activeScene,studyRole]);
 
   const venueOptions = useMemo(() => recommendVenues(
     currentActivity.category,
@@ -351,6 +369,26 @@ export default function Home() {
     }
     setStep(1);
     setView("match");
+  };
+
+  const selectDiscoveryActivity = (name: string) => {
+    const next = allActivities.find(item=>item.name===name);
+    if (!next) return;
+    setScene((next.scene || "offline") as Scene);
+    if (studyRoleOptions[name]?.[0]) setStudyRole(studyRoleOptions[name][0]);
+    setActivity(name);
+    setSelectedDiscoveryActivity(name);
+    setSearchQuery(name);
+    notify(`已选择「${name}」，点击“开始匹配”后发送候选邀请`);
+  };
+
+  const startSelectedMatch = () => {
+    const next = selectedDiscoveryActivity || activity;
+    if (!next) { notify("请先选择一个项目"); return; }
+    selectDiscoveryActivity(next);
+    setStep(3);
+    setView("match");
+    notify("AI 已基于标签推荐候选人，正在等待对方确认");
   };
 
   const selectScene = (nextScene: Scene, target: "plaza"|"match" = "plaza") => {
@@ -388,6 +426,7 @@ export default function Home() {
     if (studyRoleOptions[item.name]?.[0]) setStudyRole(studyRoleOptions[item.name][0]);
     setActivity(item.name);
     setSearchQuery(item.name);
+    setSelectedDiscoveryActivity(item.name);
     setStep(2);
   };
 
@@ -430,7 +469,8 @@ export default function Home() {
     const updated = history.map((record, index) => index === 0 ? {...record,status:"已完成" as const} : record);
     setHistory(updated);
     localStorage.setItem("penggemian-history", JSON.stringify(updated));
-    setStep(5);
+    // 复盘不属于一次成局流程；活动结束后统一沉淀在“我的”中。
+    setView("review");
   };
 
   const saveActivityConnections = (ids: string[]) => {
@@ -534,8 +574,31 @@ export default function Home() {
   };
 
   const navigateProfile = (destination: ProfileDestination) => {
-    if (destination === "quiz") openTestCenter();
+    if (destination === "tags") { setTagDraft(personalTags); setView("tags"); }
+    else if (destination === "review") setView("review");
     else setView(destination);
+  };
+
+  const togglePersonalTag = (tag: string) => setTagDraft(current => current.includes(tag) ? current.filter(item=>item!==tag) : [...current, tag]);
+  const savePersonalTags = () => {
+    const next = tagDraft.length ? tagDraft : defaultPersonalTags;
+    setPersonalTags(next);
+    localStorage.setItem("penggemian-personal-tags", JSON.stringify(next));
+    // 按标签决定首先展示的推荐场景，不用无关项目填充推荐位。
+    const studySignals = ["商赛","商业案例","挑战杯","创新创业","CPA","金融","咨询","行业研究","路演","财务分析","论文写作","数学建模","ACM","算法","编程"];
+    const onlineSignals = ["王者荣耀","steam","switch","PS5","瓦学弟","吃鸡达人","第五人格","金铲铲","游戏搭子"];
+    // 跳转场景采用用户显式选中的主标签，避免“数码发烧友”等宽泛标签误把人带到商赛页。
+    const nextScene: Scene = next.some(tag => studySignals.includes(tag)) ? "study" : next.some(tag => onlineSignals.includes(tag)) ? "online" : "offline";
+    const nextActivity = rankActivitiesForProfile(allActivities.filter(item => (item.scene || "offline") === nextScene), next, recommendationSeed)[0];
+    if (nextActivity) {
+      setActivity(nextActivity.name);
+      setSelectedDiscoveryActivity(nextActivity.name);
+    }
+    setScene(nextScene);
+    setCategory("推荐");
+    setSearchQuery("");
+    notify(`已保存 ${next.length} 个个人标签，已跳转到与你标签相关的推荐项目`);
+    setView("plaza");
   };
 
   const openScannedFriend = (userId: string) => {
@@ -545,52 +608,46 @@ export default function Home() {
   };
 
   const navItems: Array<[View, string, string]> = [
-    ["home", "⌂", "首页"], ["match", "✦", "开始匹配"],
-    ["plaza", "◫", "场景大厅"], ["quiz", "◇", "测试中心"], ["friends", "◎", "好友"], ["history", "↺", "活动记录"], ["partners", "♧", "组织"],
+    ["home", "⌂", "发现"],
+    ["match", "♡", "匹配"],
+    ["friends", "◎", "好友"],
   ];
 
   return <main>
-    <header className="nav app-nav">
-      <button className="brand" onClick={()=>setView("home")}><span className="brand-mark">碰</span><span>碰个面</span><em>AI 主理人</em></button>
-      <nav aria-label="主导航">
-        <button onClick={()=>setView("plaza")}>场景大厅</button>
-        <button className="nav-match" onClick={()=>openMatch()}>开始匹配</button>
-        <button onClick={openTestCenter}>测试中心</button>
-        <button onClick={()=>setView("partners")}>机构接入</button>
-        <button onClick={()=>setView("business")}>品牌合作</button>
-      </nav>
-      <button className="campus-pill" onClick={()=>setShowLocationPicker(true)}>⌖ {userLocation.label}⌄</button>
-    </header>
-
     <section className="product-intro app-workspace">
       <div className="workspace-frame">
         <aside className="workspace-rail" aria-label="工作台快捷导航">
           <button className="rail-logo" onClick={()=>setView("home")}>碰</button>
-          {navItems.map(([id,icon,label])=><button key={id} className={`${view===id?"active":""} ${id==="match"?"match-entry":""}`} onClick={()=>id==="match"?openMatch():id==="quiz"?openTestCenter():setView(id)}><span>{icon}</span>{id==="match"?<strong>{label}</strong>:label}</button>)}
-          <i />
-          <button onClick={()=>notify("消息中心暂无新提醒")}><span>◌</span>消息</button>
-          <button className={["profile","friendCode","security","verification"].includes(view)?"active":""} onClick={()=>setView("profile")}><span>○</span>我的</button>
+          {navItems.map(([target, icon, label]) => (
+            <button key={target} className={view === target ? "active" : ""} onClick={() => setView(target)}><span>{icon}</span>{label}</button>
+          ))}
+          <div className="rail-spacer" />
+          <button className={["profile","friendCode","security","verification"].includes(view) ? "active" : ""} onClick={() => setView("profile")}><span>○</span>我的</button>
+          <div className="rail-trust">🌿<small>真实校园 · 安全守护<br/>遇见同频的你</small></div>
         </aside>
 
         <div className={`workspace-main view-${view}`}>
           <div className="workspace-top"><button className="workspace-location" onClick={()=>setShowLocationPicker(true)}>⌖ {userLocation.label}<small>仅本机用于距离计算 · 对外模糊显示</small></button><div><button aria-label="搜索活动" onClick={()=>{setSearchQuery("");setView("match");setStep(1)}}>⌕</button><button aria-label="消息" onClick={()=>notify("暂无新消息")}>♧</button><b>Y</b></div></div>
 
-          {view === "home" && <div className="workspace-view home-view immersive-home">
-            <section className="immersive-hero">
-              <div className="immersive-copy"><span>THE AI CAMPUS SOCIAL PLATFORM</span><h1>遇见你的<br/><em>同频伙伴</em></h1><p>从一次真实连接开始。线下去玩、线上组队、学习竞赛，AI 负责把合适的人、规则与下一步组织起来。</p><div className="immersive-actions"><button onClick={()=>openMatch()}>开始匹配 <b>→</b></button><button onClick={()=>setView("plaza")}>探索场景</button></div><small>同校验证 · 双向确认 · 过程可控</small></div>
-              <div className="immersive-visual" aria-label="校园连接信号示意"><div className="signal-orbit orbit-a">同校活动</div><div className="signal-orbit orbit-b">正在补位</div><div className="signal-orbit orbit-c">今晚 19:30</div><div className="signal-people"><i>Y</i><i>许</i><i>周</i><i>林</i></div><div className="signal-line"/><p>8 场活动正在发生</p></div>
-            </section>
-            <section className="immersive-scene-grid">{(Object.keys(scenes) as Scene[]).map(id=>{const item=scenes[id];return <button key={id} className={`immersive-scene scene-${id}`} onClick={()=>selectScene(id)}><span>{item.icon}</span><small>{item.eyebrow}</small><h2>{item.title}</h2><p>{item.description}</p><em>{item.action} →</em></button>})}</section>
-            <section className="immersive-proof"><span><b>18</b> 个实时席位</span><span><b>92%</b> 候选人已认证</span><span><b>3</b> 种连接场景</span><button onClick={()=>openTestCenter()}>不知道从哪开始？做个测试 →</button></section>
-          </div>}
+          {view === "home" && <div className="workspace-view home-view reference-home">
+  <section className="reference-hero">
+    <div className="reference-title-row"><h1>今天，遇见同频的人</h1><button className="refresh-home" onClick={()=>setHomeBatch(value=>value+1)}>↻ 换一批</button></div>
+    <button className={`urgent-banner ${selectedDiscoveryActivity === "麻将三缺一" ? "selected" : ""}`} onClick={()=>selectDiscoveryActivity("麻将三缺一")}><span>◷</span><b>麻将三缺一 · 19:30 截止</b><small>当前还有 1 个名额，快来凑局！</small></button>
+  </section>
+  <section className="reference-cards" aria-label="实时活动">
+    {homeCards.map((item,index)=><button key={item.name} className={`reference-card ${["badminton","valorant","cpa"][index]} ${selectedDiscoveryActivity===item.name?"selected":""}`} onClick={()=>selectDiscoveryActivity(item.name)}><span className="reference-icon">{item.icon}</span><div><h3>{index===0&&item.name==="羽毛球双打"?"羽毛球成局":index===1&&item.name==="无畏契约排位组队"?"Valorant 速配":index===2&&item.name==="CPA 财管晚间共学"?"CPA 学习组":item.name}</h3><p>◎ {(item.scene||"offline")==="online"?"线上开黑":(item.scene||"offline")==="study"?"图书馆自习区":"杭城大学城"}　·　♧ {index+2}/{index+4} 人</p><em>{item.note}</em><footer><span>{item.category}</span><span>{index===1?"晚间时段":"本周可约"}</span><span>{item.group}</span></footer></div></button>)}
+  </section>
+  <button className="reference-match-button" onClick={startSelectedMatch}>开始匹配</button>
+  <p className="reference-safe">♧ 真人认证　·　隐私保护　·　安全可靠</p>
+</div>}
 
-          {view === "match" && <div className="workspace-view embedded-view match-view">
-            <div className="view-heading"><div><span>LIVE PRODUCT DEMO</span><h2>从双向邀请，到活动后复组</h2><p>AI负责推荐和执行流程，是否参加始终由用户确认。</p></div><b>{step}/5<small>当前进度</small></b></div>
+{view === "match" && <div className="workspace-view embedded-view match-view">
+            <div className="view-heading"><div><span>LIVE PRODUCT DEMO</span><h2>从双向邀请，到正式活动房间</h2><p>AI负责推荐和执行流程，是否参加始终由用户确认；活动结束后可在“我的”中复盘。</p></div><b>{step}/4<small>当前进度</small></b></div>
             <div className="progress"><i style={{width:`${progress}%`}} /></div>
             <div className="demo-shell">
-              <aside>{[[1,"告诉AI"],[2,"条件与安全"],[3,"邀请确认"],[4,"活动房间"],[5,"活动复盘"]].map(([n,label])=><button key={n} className={step===n?"active":step>n?"done":""} onClick={()=>{if(n<=step)setStep(n as Step);else notify("请先完成当前环节")}}><span>{step>n?"✓":n}</span>{label}</button>)}<div className="agent-info"><span className="ai-avatar">碰</span><div><b>AI主理人正在工作</b><p>推荐候选、发邀请、递补和提醒</p></div></div></aside>
+              <aside>{[[1,"告诉AI"],[2,"条件与安全"],[3,"邀请确认"],[4,"活动房间"]].map(([n,label])=><button key={n} className={step===n?"active":step>n?"done":""} onClick={()=>{if(n<=step)setStep(n as Step);else notify("请先完成当前环节")}}><span>{step>n?"✓":n}</span>{label}</button>)}<div className="agent-info"><span className="ai-avatar">碰</span><div><b>AI主理人正在工作</b><p>推荐候选、发邀请、递补和提醒</p></div></div></aside>
               <div className="demo-content">
-                {step===1&&<div className="panel enter-panel search-panel"><span className="panel-tag">STEP 01 · {currentScene.eyebrow}</span><h3>{currentScene.title}，你想怎么组队？</h3><p>{currentScene.description} 可以搜名称、口语表达或近义词；也可从下方推荐中直接发起。</p><div className="activity-search"><span>⌕</span><input autoFocus value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder={activeScene === "online" ? "搜索游戏、段位或‘开黑’…" : activeScene === "study" ? "搜索竞赛、证书或‘CPA 共学’…" : "搜索活动、兴趣或一句自然语言…"}/><button onClick={()=>setShowCustomActivity(true)}>＋ 自定义项目</button></div><div className="scene-inline-switch">{(Object.keys(scenes) as Scene[]).map(id=><button key={id} className={activeScene===id?"active":""} onClick={()=>selectScene(id,"match")}><span>{scenes[id].icon}</span>{scenes[id].title}</button>)}</div>{searchQuery.trim()?<div className="search-results">{searchResults.length?searchResults.map(item=><button key={item.name} onClick={()=>chooseSearchResult(item)}><span className="activity-icon">{item.icon}</span><div><b>{item.name}</b><p>{item.category} · {item.group} · {item.matchedBy}</p></div><em>选择 →</em></button>):<div className="search-empty"><b>暂时没有找到“{searchQuery}”</b><p>可以自己创建这个项目，发布后你会成为第一个参与匹配的人。</p><button onClick={()=>{setCustomName(searchQuery);setShowCustomActivity(true)}}>创建“{searchQuery}” →</button></div>}</div>:<><div className="semantic-examples"><span>试试搜索：</span>{(activeScene === "online" ? ["王者五排","无畏契约","LOL 开黑","Switch 联机"] : activeScene === "study" ? ["CPA 财管","数学建模","商业案例大赛","考研自习"] : ["拍照搭子","打球","桌游","一起看电影"]).map(query=><button key={query} onClick={()=>setSearchQuery(query)}>{query}</button>)}</div><div className="step1-section"><div className="step1-section-head"><b>为你推荐</b><span>{preferences.length ? "基于你的偏好与测试" : `先看看${currentScene.title}里最容易成局的 4 个`}</span></div><div className="step1-recommend-grid">{recommendations.slice(0,4).map((item,index)=><button key={item.name} className="step1-recommend-card" onClick={()=>chooseSearchResult(item)}><span className={`activity-icon c${index}`}>{item.icon}</span><div><em>{item.category}</em><b>{item.name}</b><p>{item.note}</p></div><i>交给 AI →</i></button>)}</div></div><div className="step1-section"><div className="step1-section-head"><b>想从分类找？</b><span>{sceneActivityList.length} 个项目 · 点选直接进入匹配</span></div><div className="step1-category-tabs">{sceneCategories[activeScene].filter(c=>c!=="推荐").map(c=><button key={c} className={category===c?"active":""} onClick={()=>setCategory(c)}>{c}<small>{sceneActivityList.filter(item=>item.category===c).length}</small></button>)}</div><div className="step1-quick-grid">{sceneActivityList.filter(item=>item.category===category).slice(0,8).map((item,index)=><button className="step1-quick-card" key={item.name} onClick={()=>chooseSearchResult(item)}><span className={`activity-icon c${index%5}`}>{item.icon}</span><b>{item.name}</b><p>{item.note}</p></button>)}<button className="step1-quick-card browse-all" onClick={()=>setView("plaza")}><span className="activity-icon">→</span><b>查看全部 {sceneActivityList.length} 个项目</b><p>进入场景大厅浏览完整列表</p></button></div></div></>}</div>}
+                {step===1&&<div className="panel enter-panel search-panel"><span className="panel-tag">STEP 01 · {currentScene.eyebrow}</span><h3>{currentScene.title}，你想怎么组队？</h3><p>{currentScene.description} 可以搜名称、口语表达或近义词；也可从下方推荐中直接发起。</p><div className="activity-search"><span>⌕</span><input autoFocus value={searchQuery} onChange={event=>setSearchQuery(event.target.value)} placeholder={activeScene === "online" ? "搜索游戏、段位或‘开黑’…" : activeScene === "study" ? "搜索竞赛、证书或‘CPA 共学’…" : "搜索活动、兴趣或一句自然语言…"}/><button onClick={()=>setShowCustomActivity(true)}>＋ 自定义项目</button></div><div className="scene-inline-switch">{(Object.keys(scenes) as Scene[]).map(id=><button key={id} className={activeScene===id?"active":""} onClick={()=>selectScene(id,"match")}><span>{scenes[id].icon}</span>{scenes[id].title}</button>)}</div>{searchQuery.trim()?<div className="search-results">{searchResults.length?searchResults.map(item=><button key={item.name} onClick={()=>chooseSearchResult(item)}><span className="activity-icon">{item.icon}</span><div><b>{item.name}</b><p>{item.category} · {item.group} · {item.matchedBy}</p></div><em>选择 →</em></button>):<div className="search-empty"><b>暂时没有找到“{searchQuery}”</b><p>可以自己创建这个项目，发布后你会成为第一个参与匹配的人。</p><button onClick={()=>{setCustomName(searchQuery);setShowCustomActivity(true)}}>创建“{searchQuery}” →</button></div>}</div>:<><div className="semantic-examples"><span>试试搜索：</span>{(activeScene === "online" ? ["王者五排","无畏契约","LOL 开黑","Switch 联机"] : activeScene === "study" ? ["CPA 财管","数学建模","商业案例大赛","考研自习"] : ["拍照搭子","打球","桌游","一起看电影"]).map(query=><button key={query} onClick={()=>setSearchQuery(query)}>{query}</button>)}</div><div className="step1-section"><div className="step1-section-head"><b>为你推荐</b><span>基于个人标签语义：{personalTags.slice(0,3).join("、")}</span></div><div className="step1-recommend-grid">{recommendations.slice(0,4).map((result,index)=><button key={result.name} className="step1-recommend-card" onClick={()=>chooseSearchResult(result)}><span className={`activity-icon c${index}`}>{result.icon}</span><div><em>{result.category}</em><b>{result.name}</b><p>{result.profileReason}</p></div><i>选择 →</i></button>)}</div></div><div className="step1-section"><div className="step1-section-head"><b>想从分类找？</b><span>{sceneActivityList.length} 个项目 · 点选直接进入匹配</span></div><div className="step1-category-tabs">{sceneCategories[activeScene].filter(c=>c!=="推荐").map(c=><button key={c} className={category===c?"active":""} onClick={()=>setCategory(c)}>{c}<small>{sceneActivityList.filter(item=>item.category===c).length}</small></button>)}</div><div className="step1-quick-grid">{sceneActivityList.filter(item=>item.category===category).slice(0,8).map((item,index)=><button className="step1-quick-card" key={item.name} onClick={()=>chooseSearchResult(item)}><span className={`activity-icon c${index%5}`}>{item.icon}</span><b>{item.name}</b><p>{item.note}</p></button>)}<button className="step1-quick-card browse-all" onClick={()=>setView("plaza")}><span className="activity-icon">→</span><b>查看全部 {sceneActivityList.length} 个项目</b><p>进入场景大厅浏览完整列表</p></button></div></div></>}</div>}
                 {step===2&&<div className="panel preference-panel">
                   <span className="panel-tag">STEP 02 · CONDITIONS & SAFETY</span><h3>{activeScene === "online" ? "确认开房条件、组队偏好和隐私范围" : activeScene === "study" ? "确认目标、协作节奏和隐私范围" : "确认匹配条件、费用和隐私范围"}</h3><p>{activeScene === "online" ? "游戏 ID、房间码与语音链接均在双方确认后才对本局成员可见。" : activeScene === "study" ? "只展示目标、节奏和模糊校区；联系方式在双方确认加入后再交换。" : "精确位置只在本机参与距离计算，成局前其他人只看到“同校 · 约1—3km”。"}</p>
                   <div className="form-grid"><label>活动主题<select value={activity} onChange={e=>{const next=e.target.value;setActivity(next);if(studyRoleOptions[next]?.[0])setStudyRole(studyRoleOptions[next][0])}}>{allActivities.map(x=><option key={x.name}>{x.name}</option>)}</select></label><label>时间<input type="datetime-local" value={time} min="2026-08-17T00:00" onInput={e=>setTime(e.currentTarget.value)} onChange={e=>setTime(e.target.value)}/></label><label>水平 / 目标<select value={level} onChange={e=>setLevel(e.target.value)}><option>新手友好</option><option>同水平参与</option><option>固定互相监督</option></select></label><label>理想人数<div className="stepper"><button onClick={()=>setSeats(Math.max(4,seats-1))}>−</button><b>{seats} 人</b><button onClick={()=>setSeats(Math.min(12,seats+1))}>＋</button></div></label></div>
@@ -609,7 +666,6 @@ export default function Home() {
                 </div>}
                 {step===3&&<InvitationMatch key={`${activity}-${time}-${seats}`} matchPlan={matchPlan} activity={activity} time={displayTime} seats={seats} level={level} userLocation={userLocation} venues={venueOptions} selectedVenueId={selectedVenueId} venueFeeIncluded={venueFeeIncluded} seatPrice={seatPrice} onSelectVenue={setSelectedVenueId} onFormActivity={completeBooking} onNotify={notify}/>}
                 {step===4&&selectedVenue&&<ActivityRoom activity={activity} time={displayTime} seats={seats} seatPrice={seatPrice} venueFeeIncluded={venueFeeIncluded} selectedVenue={selectedVenue} venues={venueOptions} participants={roomParticipants.length ? roomParticipants : matchPlan.selected} onSelectVenue={setSelectedVenueId} onAddMobileCalendar={addMobileCalendar} onEndActivity={finishActivity} onNotify={notify}/>}
-                {step===5&&<PostActivity activity={activity} participants={roomParticipants.length ? roomParticipants : matchPlan.selected} onRegroup={regroupFromActivity} onSaveConnections={saveActivityConnections} onNotify={notify}/>}
               </div>
             </div>
           </div>}
@@ -618,7 +674,7 @@ export default function Home() {
             <div className="view-heading plaza-heading"><div><span>{scenes[scene].eyebrow}</span><h2>{scenes[scene].title}大厅</h2><p>{scenes[scene].description} AI 会根据不同场景切换就近选址、建房组队或长期协作的流程。</p></div><b>{category === "推荐" ? 4 : sceneActivityList.filter(x=>x.category===category).length}<small>{category === "推荐" ? "个性化推荐" : `${category}项目`}</small></b></div>
             <div className="plaza-scene-switch">{(Object.keys(scenes) as Scene[]).map(id=><button key={id} className={scene===id?"active":""} onClick={()=>selectScene(id)}><span>{scenes[id].icon}</span><div><small>{scenes[id].eyebrow}</small><b>{scenes[id].title}</b></div><em>{scenes[id].detail}</em></button>)}</div>
             <div className="category-tabs">{sceneCategories[scene].map(x=><button key={x} className={category===x?"active":""} onClick={()=>{setCategory(x);setSearchQuery("")}}>{x}<small>{x === "推荐" ? 4 : sceneActivityList.filter(item=>item.category===x).length}</small></button>)}</div>
-            {category === "推荐" ? <><div className="recommend-toolbar"><span>根据你的偏好与测试结果生成，每次展示 4 个 {scenes[scene].title}项目</span><div><button onClick={()=>{setPreferenceDraft(preferences);setShowOnboarding(true)}}>调整偏好</button><button onClick={()=>setRecommendationSeed(seed=>seed+1)}>换一组</button></div></div><div className="activity-grid recommendation-grid">{recommendations.map((item,i)=><button className="activity-card" key={item.name} onClick={()=>openMatch(item.name)}><span className={`activity-icon c${i%5}`}>{item.icon}</span><div><em>{item.category}</em><h3>{item.name}</h3><p>{item.note}</p><b>{item.meta}</b></div><i>{scene === "online" ? "开始组队 →" : scene === "study" ? "发起协作 →" : "交给 AI 成局 →"}</i></button>)}</div></> : <><div className="plaza-summary"><div><span className="summary-spark">✦</span><div><b>{category} · {sceneActivityList.filter(x=>x.category===category).length} 个可发起项目</b><p>{scene === "online" ? "点选后确认段位、位置和语音偏好；双方同意后才交换游戏 ID 与房间码。" : scene === "study" ? "点选后确认目标、协作周期和角色；双方同意后才建立协作空间。" : "点选任意活动，直接进入 AI 成局流程；人数、水平、时间和费用都可以继续确认。"}</p></div></div><button onClick={()=>openMatch()}>直接告诉 AI →</button></div><div className="activity-groups">{Array.from(new Set(sceneActivityList.filter(x=>x.category===category).map(x=>x.group))).map(group=><section className="activity-section" key={group}><div className="activity-section-title"><h3>{group}</h3><span>{sceneActivityList.filter(x=>x.category===category&&x.group===group).length} 个项目</span></div><div className="activity-grid">{sceneActivityList.filter(x=>x.category===category&&x.group===group).map((x,i)=><button className="activity-card" key={x.name} onClick={()=>openMatch(x.name)}><span className={`activity-icon c${i%5}`}>{x.icon}</span><div><em>{x.category} · {x.group}</em><h3>{x.name}</h3><p>{x.note}</p><b>{x.meta}</b></div><i>{scene === "online" ? "开始组队 →" : scene === "study" ? "发起协作 →" : "交给 AI 成局 →"}</i></button>)}</div></section>)}</div></>}
+            {category === "推荐" ? <><div className="recommend-toolbar"><span>根据个人标签语义生成，每次展示 4 个 {scenes[scene].title}项目</span><div><button onClick={()=>setView("tags")}>调整标签</button><button onClick={()=>setRecommendationSeed(seed=>seed+1)}>换一组</button></div></div><div className="activity-grid recommendation-grid">{recommendations.map((result,i)=><button className="activity-card" key={result.name} onClick={()=>selectDiscoveryActivity(result.name)}><span className={`activity-icon c${i%5}`}>{result.icon}</span><div><em>{result.category}</em><h3>{result.name}</h3><p>{result.profileReason}</p><b>{result.meta}</b></div><i>选择项目 →</i></button>)}</div></> : <><div className="plaza-summary"><div><span className="summary-spark">✦</span><div><b>{category} · {sceneActivityList.filter(x=>x.category===category).length} 个可发起项目</b><p>{scene === "online" ? "点选后确认段位、位置和语音偏好；双方同意后才交换游戏 ID 与房间码。" : scene === "study" ? "点选后确认目标、协作周期和角色；双方同意后才建立协作空间。" : "点选任意活动，直接进入 AI 成局流程；人数、水平、时间和费用都可以继续确认。"}</p></div></div><button onClick={()=>openMatch()}>直接告诉 AI →</button></div><div className="activity-groups">{Array.from(new Set(sceneActivityList.filter(x=>x.category===category).map(x=>x.group))).map(group=><section className="activity-section" key={group}><div className="activity-section-title"><h3>{group}</h3><span>{sceneActivityList.filter(x=>x.category===category&&x.group===group).length} 个项目</span></div><div className="activity-grid">{sceneActivityList.filter(x=>x.category===category&&x.group===group).map((x,i)=><button className="activity-card" key={x.name} onClick={()=>selectDiscoveryActivity(x.name)}><span className={`activity-icon c${i%5}`}>{x.icon}</span><div><em>{x.category} · {x.group}</em><h3>{x.name}</h3><p>{x.note}</p><b>{x.meta}</b></div><i>{scene === "online" ? "开始组队 →" : scene === "study" ? "发起协作 →" : "交给 AI 成局 →"}</i></button>)}</div></section>)}</div></>}
           </div>}
 
           {view === "quiz" && <div className="workspace-view embedded-view quiz-view">
@@ -633,7 +689,11 @@ export default function Home() {
 
           {view === "history" && <div className="workspace-view embedded-view history-view"><div className="view-heading"><div><span>MY ACTIVITY LEDGER</span><h2>过往活动记录</h2><p>这里读取的是你在当前 Demo 中真实完成的成局记录，不是预置展示卡片。</p></div><b>{history.length}<small>条本机记录</small></b></div>{history.length?<div className="history-list">{history.map(record=><article key={record.id}><div className="history-icon">✓</div><div><span>{new Date(record.createdAt).toLocaleString("zh-CN")}</span><h3>{record.activity}</h3><p>{record.time} · {record.venue}</p></div><div className="history-meta"><b>¥{record.price}</b><em>{record.status}</em><small>{record.calendarAdded?"已导入日历":"未导入日历"}</small></div><button onClick={()=>openMatch(record.activity)}>再次发起 →</button></article>)}</div>:<div className="history-empty"><span>↺</span><h3>还没有真实活动记录</h3><p>完成一次“确认并购买席位”的 Demo 流程后，记录会立即写入并可在这里查询。</p><button onClick={()=>openMatch()}>开始第一次匹配 →</button></div>}<div className="storage-note"><b>记录机制</b><p>当前版本未要求登录，因此记录保存在本设备浏览器中；接入校园账号后可替换为云端数据库，实现跨设备查询。</p></div></div>}
 
-          {view === "profile" && <ProfileCenter mbti={mbtiResult} verificationStatus={verificationStatus} friendCount={friends.length} activityCount={history.length} onNavigate={navigateProfile} onNotify={notify}/>}
+          {view === "profile" && <ProfileCenter verificationStatus={verificationStatus} tagCount={personalTags.length} activityCount={history.length} onNavigate={navigateProfile}/>}
+
+          {view === "tags" && <div className="workspace-view embedded-view tag-view"><div className="view-heading"><div><span>PERSONAL MATCH TAGS</span><h2>个人标签</h2><p>标签不公开展示；它们会扩展为近义语义，用于排序活动和筛选更适合一起参加的人。</p></div><b>{tagDraft.length}<small>已选择</small></b></div><div className="tag-algorithm-note"><b>算法如何使用</b><span>标签 → 语义扩展（如“王者荣耀”→ MOBA / 开黑）→ 活动召回 → 同频候选人排序 → 分别发送邀请</span></div><div className="tag-groups">{personalTagGroups.map((group,index)=><section key={index}><small>{["性格与生活方式","游戏与数码兴趣","技能与内容偏好","MBTI","学习与竞赛目标"][index]}</small><div>{group.map(tag=><button key={tag} className={tagDraft.includes(tag)?"selected":""} onClick={()=>togglePersonalTag(tag)}>{tagDraft.includes(tag)?"✓ ":"＋ "}{tag}</button>)}</div></section>)}</div><div className="tag-actions"><button onClick={()=>setView("profile")}>取消</button><button className="primary" onClick={savePersonalTags}>保存并查看推荐 →</button></div></div>}
+
+          {view === "review" && <div className="workspace-view embedded-view review-view"><div className="view-heading"><div><span>ACTIVITY REVIEW & REGROUP</span><h2>活动复盘</h2><p>评价体验、私密选择愿意再次同局的人，并在双方同意后完成好友、复组或长期小组。</p></div></div><PostActivity activity={history[0]?.activity || activity} participants={roomParticipants.length ? roomParticipants : matchPlan.selected} onRegroup={regroupFromActivity} onSaveConnections={saveActivityConnections} onNotify={notify}/></div>}
 
           {view === "friendCode" && <FriendCodePanel userId="PG20260814" nickname="Young" onBack={()=>setView("profile")} onScanned={openScannedFriend} onNotify={notify}/>}
 
