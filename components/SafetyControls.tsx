@@ -1,5 +1,7 @@
 "use client";
 
+import Icon from "./Icon";
+
 export type AudienceRules = {
   sameCampus: boolean;
   womenOnly: boolean;
@@ -28,7 +30,7 @@ export default function SafetyControls({ value, onChange, onNotify }: Props) {
 
   return <div className="safety-controls">
     <div className="safety-title"><div><b>隐私与参与范围</b><p>匹配前只展示必要信息，用户可以控制谁能看见和参与。</p></div><span>安全优先</span></div>
-    <div className="safety-rule-grid">{rules.map(([key, title, note]) => <button key={key} className={value[key] ? "selected" : ""} onClick={() => toggle(key)}><i>{value[key] ? "✓" : "○"}</i><div><b>{title}</b><p>{note}</p></div></button>)}</div>
+    <div className="safety-rule-grid">{rules.map(([key, title, note]) => <button key={key} className={value[key] ? "selected" : ""} onClick={() => toggle(key)}><i><Icon name={value[key] ? "check" : "shield-check"} size="sm"/></i><div><b>{title}</b><p>{note}</p></div></button>)}</div>
     <div className="privacy-boundary"><span>成局前：同校 · 约1—3km</span><span>确认后：展示活动场地</span><span>始终隐藏：宿舍与实时位置</span><button onClick={() => onNotify("已打开举报、拉黑和拒绝再次同局设置")}>举报 / 拉黑设置 →</button></div>
   </div>;
 }

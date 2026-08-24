@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import type { ScoredCandidate } from "../lib/matching";
 import { buildAmapNavigationUrl, type Coordinate } from "../lib/location";
+import Icon from "./Icon";
 
 type VenueOption = {
   id: string;
@@ -91,7 +92,7 @@ export default function ActivityRoom({
 
     {calendarOpen && <div className="modal-layer calendar-modal-layer" onMouseDown={event => { if (event.target === event.currentTarget) setCalendarOpen(false); }}>
       <section className="action-modal calendar-modal" role="dialog" aria-modal="true" aria-labelledby="calendar-modal-title">
-        <button className="modal-close" aria-label="关闭日历预览" onClick={() => setCalendarOpen(false)}>×</button>
+        <button className="modal-close" aria-label="关闭日历预览" onClick={() => setCalendarOpen(false)}><Icon name="x" size="sm"/></button>
         <span>ADD TO CALENDAR</span>
         <h2 id="calendar-modal-title">添加到手机日历</h2>
         <p>确认后会生成一个标准日历事件，由你的设备选择系统日历或其他日历应用打开。</p>
@@ -101,7 +102,7 @@ export default function ActivityRoom({
           <div><span>地点</span><b>{selectedVenue.name}<small>{selectedVenue.address}</small></b></div>
           <div><span>提醒</span><b>开始前 1 小时</b></div>
         </div>
-        <div className="calendar-privacy"><i>✓</i><p><b>不会读取你的日历</b><small>仅生成本次活动的日历文件；是否保存由你在系统日历中确认。</small></p></div>
+        <div className="calendar-privacy"><i><Icon name="shield-check" size="sm"/></i><p><b>不会读取你的日历</b><small>仅生成本次活动的日历文件；是否保存由你在系统日历中确认。</small></p></div>
         <div className="calendar-modal-actions"><button onClick={() => setCalendarOpen(false)}>暂不添加</button><button onClick={() => { onAddMobileCalendar(); setCalendarOpen(false); }}>确认并打开日历</button></div>
       </section>
     </div>}

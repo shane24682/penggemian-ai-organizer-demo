@@ -32,6 +32,12 @@
   --radius-lg: 18px;
   --radius-xl: 26px;
 
+  --icon-xs: 14px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 32px;
+
   /* Typography: native Chinese UI sans + a locally hosted mono accent. */
   --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
   --font-display: var(--font-sans);
