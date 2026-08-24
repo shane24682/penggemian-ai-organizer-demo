@@ -197,21 +197,6 @@ const personalTagGroups = [
   ["商赛","商业案例","挑战杯","创新创业","CPA","金融","咨询","行业研究","路演","财务分析","市场调研","供应链","电子设计","机器人","人工智能","大数据","智能汽车","产品设计","视觉设计","创意设计","英语","辩论","翻译","科研","论文写作","环保公益","社会调研","数学建模","ACM","算法","编程"],
 ];
 
-const urgentEvents: Array<{name:string;current:number;total:number;time:string;place:string;urgency:string;scene:Scene}> = [
-  {name:"麻将三缺一",current:3,total:4,time:"今天 19:30",place:"南门桌游店",urgency:"还差 1 人",scene:"offline"},
-  {name:"王者荣耀五排速配",current:3,total:5,time:"今晚 20:30",place:"线上房间",urgency:"缺 2 个位置",scene:"online"},
-  {name:"CPA 财管晚间共学",current:4,total:6,time:"今晚 19:00",place:"线上自习室",urgency:"还差 2 人",scene:"study"},
-  {name:"数学建模竞赛组队",current:2,total:3,time:"本周招募",place:"线上协作",urgency:"缺 1 位编程同学",scene:"study"},
-];
-
-const liveSignals: Array<{icon:string;label:string;title:string;detail:string;tone:string;scene:Scene;activity?:string}> = [
-  {icon:"⌖",label:"距你约1.2km",title:"麻将三缺一",detail:"19:30截止 · 还差1人",tone:"hot",scene:"offline",activity:"麻将三缺一"},
-  {icon:"⌁",label:"线上实时补位",title:"无畏契约排位组队",detail:"还差2人 · 已开语音房",tone:"campus",scene:"online",activity:"无畏契约排位组队"},
-  {icon:"研",label:"同校共学招募",title:"CPA 财管晚间共学",detail:"还差2人 · 今晚19:00",tone:"friend",scene:"study",activity:"CPA 财管晚间共学"},
-  {icon:"今",label:"你附近今天",title:"8场线下活动正在确认",detail:"均只显示模糊距离",tone:"nearby",scene:"offline"},
-  {icon:"✓",label:"刚刚完成",title:"3人商赛小组",detail:"已建立下周任务清单",tone:"done",scene:"study",activity:"商业案例大赛组队"},
-];
-
 const quizQuestions = [
   {question:"一个空闲下午，你更想怎么度过？",answers:[
     {label:"动起来，最好有点竞技",scores:{运动:3,户外探索:1},tag:"行动派"},
@@ -251,7 +236,7 @@ export default function Home() {
   const [partner, setPartner] = useState("学生社团");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [preferenceDraft, setPreferenceDraft] = useState<string[]>([]);
-  const [preferences, setPreferences] = useState<string[]>([]);
+  const [, setPreferences] = useState<string[]>([]);
   const [recommendationSeed, setRecommendationSeed] = useState(1);
   const [personalTags, setPersonalTags] = useState<string[]>(defaultPersonalTags);
   const [tagDraft, setTagDraft] = useState<string[]>(defaultPersonalTags);
@@ -336,17 +321,6 @@ export default function Home() {
     return {categories,tags,type:tags.slice(0,2).join(" · ")||"兴趣探索者"};
   }, [quizAnswers]);
 
-  const preferenceCategories = useMemo(() => preferences.map(name=>allActivities.find(item=>item.name===name)?.category).filter(Boolean) as string[], [preferences,allActivities]);
-  const mbtiCategories = useMemo(() => {
-    const tags = mbtiResult?.tags || [];
-    const result = new Set<string>();
-    if (tags.some(tag=>["行动派","组队型","热闹"].includes(tag))) { result.add("运动"); result.add("轻娱乐"); }
-    if (tags.some(tag=>["创作型","慢热"].includes(tag))) result.add("兴趣技能");
-    if (tags.some(tag=>["同好型","表达型","轻社交"].includes(tag))) result.add("社团社交");
-    if (tags.some(tag=>["目标感"].includes(tag))) result.add("学习充电");
-    if (tags.some(tag=>["探索欲"].includes(tag))) result.add("户外探索");
-    return Array.from(result);
-  }, [mbtiResult]);
   const recommendations = useMemo(() => rankActivitiesForProfile(sceneActivityList, personalTags, recommendationSeed).slice(0,4), [personalTags, recommendationSeed, sceneActivityList]);
   const homeCards = useMemo(() => {
     const batches = [
@@ -665,10 +639,10 @@ export default function Home() {
     <button className={`urgent-banner ${selectedDiscoveryActivity === "麻将三缺一" ? "selected" : ""}`} onClick={()=>selectDiscoveryActivity("麻将三缺一")}><span>◷</span><b>麻将三缺一 · 19:30 截止</b><small>当前还有 1 个名额，快来凑局！</small></button>
   </section>
   <section className="reference-cards" aria-label="实时活动">
-    {homeCards.map((item,index)=><button key={item.name} className={`reference-card ${["badminton","valorant","cpa"][index]} ${selectedDiscoveryActivity===item.name?"selected":""}`} onClick={()=>selectDiscoveryActivity(item.name)}><span className="reference-icon">{item.icon}</span><div><h3>{index===0&&item.name==="羽毛球双打"?"羽毛球成局":index===1&&item.name==="无畏契约排位组队"?"Valorant 速配":index===2&&item.name==="CPA 财管晚间共学"?"CPA 学习组":item.name}</h3><p>◎ {(item.scene||"offline")==="online"?"线上开黑":(item.scene||"offline")==="study"?"图书馆自习区":"杭城大学城"}　·　♧ {index+2}/{index+4} 人</p><em>{item.note}</em><footer><span>{item.category}</span><span>{index===1?"晚间时段":"本周可约"}</span><span>{item.group}</span></footer></div></button>)}
+    {homeCards.map((item,index)=><button key={item.name} className={`reference-card ${["badminton","valorant","cpa"][index]} ${selectedDiscoveryActivity===item.name?"selected":""}`} onClick={()=>selectDiscoveryActivity(item.name)}><span className="reference-icon">{item.icon}</span><div><h3>{index===0&&item.name==="羽毛球双打"?"羽毛球成局":index===1&&item.name==="无畏契约排位组队"?"Valorant 速配":index===2&&item.name==="CPA 财管晚间共学"?"CPA 学习组":item.name}</h3><p>◎ {(item.scene||"offline")==="online"?"线上开黑":(item.scene||"offline")==="study"?"图书馆自习区":"杭城大学城"}{"　·　♧ "}{index+2}/{index+4} 人</p><em>{item.note}</em><footer><span>{item.category}</span><span>{index===1?"晚间时段":"本周可约"}</span><span>{item.group}</span></footer></div></button>)}
   </section>
   <button className="reference-match-button" onClick={startSelectedMatch}>开始匹配</button>
-  <p className="reference-safe">♧ 真人认证　·　隐私保护　·　安全可靠</p>
+  <p className="reference-safe">♧ 真人认证{"　·　"}隐私保护{"　·　"}安全可靠</p>
 </div>}
 
 {view === "match" && <div className="workspace-view embedded-view match-view">

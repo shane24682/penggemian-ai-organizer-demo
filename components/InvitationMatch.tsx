@@ -108,7 +108,6 @@ export default function InvitationMatch({
 
   const totalVenueVotes = Object.values(venueVotes).reduce((sum, n) => sum + n, 0);
   const sortedVenues = [...venues].sort((a, b) => (venueVotes[b.id] || 0) - (venueVotes[a.id] || 0));
-  const topVenue = sortedVenues[0];
   const voteVenue = (venueId: string) => {
     setVenueVotes(current => {
       const next = { ...current };

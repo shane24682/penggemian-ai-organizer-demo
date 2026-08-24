@@ -6,12 +6,17 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vinext dev",
-    "build": "vinext build",
+    "dev": "vite --config vite.edgeone.config.ts",
+    "build": "vite build --config vite.edgeone.config.ts",
     "build:edgeone": "vite build --config vite.edgeone.config.ts",
-    "start": "vinext start",
+    "preview": "vite preview --config vite.edgeone.config.ts",
+    "start": "npm run preview",
+    "dev:vinext": "vinext dev",
+    "build:vinext": "vinext build",
+    "start:vinext": "vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "check": "npm run lint && npm test",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

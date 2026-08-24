@@ -2,27 +2,19 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-  return worker.fetch(
-    new Request("http://localhost/", { headers: { accept: "text/html" } }),
-    { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
-    { waitUntil() {}, passThroughOnException() {} },
-  );
-}
-
-test("server-renders the 碰个面 product shell", async () => {
-  const response = await render();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-  const html = await response.text();
-  assert.match(html, /<title>碰个面｜AI校园活动主理人<\/title>/i);
-  assert.match(html, /开始匹配/);
-  assert.match(html, /测试中心/);
-  assert.match(html, /我的/);
-  assert.doesNotMatch(html, /Your site is taking shape|codex-preview/i);
+test("builds the production EdgeOne SPA shell", async () => {
+  const [html, page] = await Promise.all([
+    readFile(new URL("../dist-edgeone/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(html, /<title>碰个面 · AI 校园活动主理人<\/title>/i);
+  assert.match(html, /<div id="root"><\/div>/i);
+  assert.match(html, /\/assets\/index-[^"']+\.js/i);
+  assert.match(html, /\/assets\/index-[^"']+\.css/i);
+  assert.match(page, /今天，遇见同频的人/);
+  assert.match(page, /开始匹配/);
+  assert.match(page, /我的/);
+  assert.doesNotMatch(html + page, /Your site is taking shape|codex-preview/i);
 });
 
 test("ships algorithm-backed MBTI, friend code and verification flows", async () => {

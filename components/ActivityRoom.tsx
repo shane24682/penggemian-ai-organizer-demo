@@ -89,7 +89,7 @@ export default function ActivityRoom({
 
     <button className="simulate-finish" onClick={onEndActivity}>模拟活动结束，进入互评与关系沉淀 →</button>
 
-    {calendarOpen && <div className="modal-layer calendar-modal-layer" onMouseDown={event => { if (event.target === event.currentTarget) setCalendarOpen(false); }}>
+    {calendarOpen && <div className="modal-layer calendar-modal-layer" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setCalendarOpen(false); }}>
       <section className="action-modal calendar-modal" role="dialog" aria-modal="true" aria-labelledby="calendar-modal-title">
         <button className="modal-close" aria-label="关闭日历预览" onClick={() => setCalendarOpen(false)}>×</button>
         <span>ADD TO CALENDAR</span>

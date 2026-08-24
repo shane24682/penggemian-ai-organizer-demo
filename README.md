@@ -16,24 +16,57 @@
 要求 Node.js 22.13 或更高版本。
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-浏览器打开终端显示的本地地址，通常为 `http://localhost:3000`。
+浏览器打开终端显示的本地地址，通常为 `http://localhost:5173`。该命令使用与线上 EdgeOne Makers 相同的 Vite SPA 入口，并支持热更新。
 
-## 构建验证
+## 验证与预览
 
 ```bash
-npm run build
+npm run check
+npm run preview
 ```
+
+- `npm run build`：生成 EdgeOne 生产产物到 `dist-edgeone/`
+- `npm run lint`：检查 TypeScript、React 与可访问性规则
+- `npm test`：先完成生产构建，再运行产品能力测试
+- `npm run check`：依次执行 lint、构建与测试
+
+## 兼容的 Vinext / Cloudflare 链路
+
+仓库保留原有 Vinext / Cloudflare Sites 配置，供兼容验证使用，但它不是 `penggemian.com` 当前的生产链路：
+
+```bash
+npm run dev:vinext
+npm run build:vinext
+npm run start:vinext
+```
+
+日常前端开发请使用默认的 `npm run dev`，避免同时运行两套开发服务器。
+
+## 协作与部署
+
+1. 从最新 `main` 创建功能分支。
+2. 本地执行 `npm run check`。
+3. 推送分支并创建 Pull Request，不直接向 `main` 推送。
+4. Pull Request 合并到 `main` 后，由 EdgeOne Makers 的 Git 集成触发生产构建与部署。
+
+EdgeOne 项目设置应使用：
+
+- 安装命令：`npm ci`
+- 构建命令：`npm run build`
+- 输出目录：`dist-edgeone`
+- Node.js：22.13 或更高版本
 
 ## 交接说明
 
 - 主要页面：`app/page.tsx`
 - 全局样式：`app/globals.css`
 - 页面元数据：`app/layout.tsx`
-- 构建配置：`vite.config.ts`
+- 生产构建配置：`vite.edgeone.config.ts`
+- Vinext / Cloudflare 兼容配置：`vite.config.ts`
 - `.openai/hosting.json` 未绑定任何线上项目，可由新托管环境重新配置
 
 上传 GitHub 前请继续保持 `.env*`、`node_modules`、构建缓存和任何本地凭证不进入版本库。
