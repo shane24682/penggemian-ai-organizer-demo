@@ -248,6 +248,9 @@ main {
   z-index: 220;
   left: 50%;
   bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   max-width: min(520px, calc(100vw - 32px));
   transform: translateX(-50%);
   border: 1px solid rgb(255 251 226 / 22%);

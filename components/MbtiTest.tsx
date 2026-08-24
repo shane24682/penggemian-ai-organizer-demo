@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { calculateMbti, MbtiResult, mbtiQuestions } from "../lib/mbti";
+import Icon from "./Icon";
 
 type Props = {
   savedResult: MbtiResult | null;
@@ -28,7 +29,7 @@ export default function MbtiTest({ savedResult, onBack, onComplete, onMatch }: P
   };
 
   if (result) return <div className="mbti-result">
-    <div className="mbti-result-head"><button onClick={onBack}>← 测试中心</button><span>MBTI SOCIAL PROFILE</span></div>
+    <div className="mbti-result-head"><button onClick={onBack}><Icon name="arrow-left" size="sm"/>测试中心</button><span>MBTI SOCIAL PROFILE</span></div>
     <div className="mbti-type-orb"><b>{result.type}</b><span>{result.title}</span></div>
     <h2>你的活动社交类型是<br/><em>{result.title}</em></h2>
     <p>{result.description}</p>
@@ -40,14 +41,14 @@ export default function MbtiTest({ savedResult, onBack, onComplete, onMatch }: P
 
   const question = mbtiQuestions[step];
   return <div className="mbti-test-shell">
-    <div className="mbti-test-top"><button onClick={onBack}>←</button><div><span>MBTI CAMPUS SOCIAL TEST</span><b>{step + 1}/{mbtiQuestions.length}</b></div></div>
+    <div className="mbti-test-top"><button aria-label="返回测试中心" onClick={onBack}><Icon name="arrow-left" size="sm"/></button><div><span>MBTI CAMPUS SOCIAL TEST</span><b>{step + 1}/{mbtiQuestions.length}</b></div></div>
     <div className="mbti-test-progress"><i style={{ width: `${(step + 1) / mbtiQuestions.length * 100}%` }}/></div>
     <div className="mbti-question-card">
       <span>选择更像你的那一面</span>
       <h2>{question.question}</h2>
       <div className="mbti-poles"><b>{question.left}</b><i>或</i><b>{question.right}</b></div>
       <div className="mbti-answers">{question.answers.map((item, index) => <button key={item.label} onClick={()=>answer(index)}><span>{String.fromCharCode(65 + index)}</span>{item.label}<em>→</em></button>)}</div>
-      {step > 0 && <button className="mbti-previous" onClick={()=>setStep(step - 1)}>← 上一题</button>}
+      {step > 0 && <button className="mbti-previous" onClick={()=>setStep(step - 1)}><Icon name="arrow-left" size="sm"/>上一题</button>}
     </div>
   </div>;
 }
