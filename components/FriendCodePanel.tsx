@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "../lib/vendor/qrcode/index.js";
 import QRErrorCorrectLevel from "../lib/vendor/qrcode/QRErrorCorrectLevel.js";
 import { buildFriendPayload, makeFriendCode, parseFriendPayload } from "../lib/friend-code";
+import Icon from "./Icon";
 
 type Props = {
   userId: string;
@@ -96,11 +97,11 @@ export default function FriendCodePanel({ userId, nickname, onBack, onScanned, o
   };
 
   return <div className="friend-code-view">
-    <div className="friend-code-head"><button onClick={onBack}>← 返回我的</button><div><span>MY FRIEND CODE</span><h2>我的好友码</h2></div><button onClick={()=>setScanning(true)}>▦ 扫一扫</button></div>
+    <div className="friend-code-head"><button onClick={onBack}><Icon name="arrow-left" size="sm"/>返回我的</button><div><span>MY FRIEND CODE</span><h2>我的好友码</h2></div><button onClick={()=>setScanning(true)}><Icon name="qr-code" size="sm"/>扫一扫</button></div>
     <div className="friend-code-stage">
       <div className="friend-code-card"><span className="friend-code-avatar">Y</span><h2>{nickname}</h2><p>杭城大学 · 已认证学生</p><QrCanvas value={payload}/><b>{friendCode}</b><small>二维码实时编码：版本、碰个面ID与校验码<br/>扫描后先验证校验位，再进入好友确认</small></div>
       <aside><h3>不是一张二维码图片</h3><p>每次打开都由代码把你的用户ID生成标准二维码；扫码端读取内容并验证好友码，校验通过后才允许发起好友申请。</p><div><span>01</span><b>编码用户ID</b></div><div><span>02</span><b>生成防误码校验位</b></div><div><span>03</span><b>扫码解析并确认好友</b></div><button onClick={async()=>{await navigator.clipboard.writeText(friendCode);onNotify("好友码已复制")}}>复制好友码</button><button onClick={async()=>{await navigator.clipboard.writeText(payload);onNotify("好友链接已复制")}}>复制好友链接</button></aside>
     </div>
-    {scanning && <div className="scan-layer" role="dialog" aria-modal="true"><div className="scan-modal"><button onClick={()=>setScanning(false)}>×</button><span>SCAN FRIEND QR</span><h2>扫描碰个面好友码</h2><div className="camera-frame"><video ref={videoRef} playsInline muted/><i/><i/><i/><i/></div><p>{scanState}</p><div className="manual-friend-code"><input value={manualCode} onChange={event=>setManualCode(event.target.value)} placeholder="也可以粘贴好友链接"/><button onClick={submitManual}>校验并添加</button></div><small>摄像头画面只在本机用于二维码识别，不会上传。</small></div></div>}
+    {scanning && <div className="scan-layer" role="dialog" aria-modal="true"><div className="scan-modal"><button aria-label="关闭扫码" onClick={()=>setScanning(false)}><Icon name="x" size="sm"/></button><span>SCAN FRIEND QR</span><h2>扫描碰个面好友码</h2><div className="camera-frame"><video ref={videoRef} playsInline muted/><i/><i/><i/><i/></div><p>{scanState}</p><div className="manual-friend-code"><input value={manualCode} onChange={event=>setManualCode(event.target.value)} placeholder="也可以粘贴好友链接"/><button onClick={submitManual}>校验并添加</button></div><small>摄像头画面只在本机用于二维码识别，不会上传。</small></div></div>}
   </div>;
 }
