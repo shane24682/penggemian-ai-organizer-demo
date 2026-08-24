@@ -1,0 +1,114 @@
+@media (max-width: 960px) {
+  .workspace-frame { grid-template-columns: 88px minmax(0, 1fr); }
+  .workspace-rail button { justify-content: center; flex-direction: column; gap: 3px; padding: 8px 4px; font-size: var(--text-caption); }
+  .workspace-rail button span { width: auto; }
+  .rail-trust small { display: none; }
+  .activity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .friend-layout { grid-template-columns: 1fr; }
+  .friend-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .partner-content,
+  .business-dashboard { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .app-workspace { padding: 0; }
+  .workspace-frame { min-height: 100vh; border: 0; border-radius: 0; grid-template-columns: 72px minmax(0, 1fr); }
+  .workspace-rail { padding: 16px 7px 11px; }
+  .workspace-rail .rail-logo { width: 44px; height: 44px; min-height: 44px; }
+  .rail-trust { padding-inline: 0; }
+  .workspace-top { min-height: 62px; padding: 12px 16px 0; }
+  .workspace-location small { display: none; }
+  .workspace-view,
+  .friend-code-view,
+  .security-view,
+  .verification-view { padding: 22px 16px 30px; }
+  .reference-home { justify-content: flex-start; min-height: auto; padding: 30px 16px; }
+  .reference-title-row { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .reference-title-row h1 { width: 100%; text-align: center; }
+  .refresh-home { align-self: center; margin: 0 0 8px; }
+  .reference-cards { grid-template-columns: 1fr; }
+  .reference-card { min-height: 124px; }
+  .view-heading { align-items: flex-start; }
+  .view-heading > b { font-size: 21px; }
+  .demo-shell { grid-template-columns: 1fr; }
+  .demo-shell > aside { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 9px; border-right: 0; border-bottom: 1px solid var(--color-border); }
+  .demo-shell > aside > button { justify-content: center; min-height: 48px; padding: 5px; font-size: 0; }
+  .demo-shell > aside > button span { font-size: var(--text-body); }
+  .agent-info { display: none; }
+  .demo-content { padding: 14px; }
+  .panel { padding: 17px; }
+  .panel h3 { font-size: 22px; }
+  .activity-search,
+  .plaza-search { grid-template-columns: 26px minmax(0, 1fr); }
+  .activity-search > button,
+  .plaza-search > button { grid-column: 1 / -1; }
+  .step1-recommend-grid,
+  .step1-quick-grid,
+  .form-grid,
+  .candidate-list,
+  .post-grid,
+  .relationship-actions,
+  .test-center-grid,
+  .mbti-axis-grid,
+  .friend-code-stage,
+  .verification-fields,
+  .verification-methods { grid-template-columns: 1fr; }
+  .proof-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fee-choice { grid-template-columns: 1fr; }
+  .room-layout { grid-template-columns: 1fr; }
+  .room-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mobile-only { display: block; }
+  .activity-grid { grid-template-columns: 1fr; }
+  .profile-grid { grid-template-columns: 1fr; }
+  .friend-side { grid-template-columns: 1fr; }
+  .history-list article { grid-template-columns: 38px minmax(0, 1fr); }
+  .history-meta { grid-column: 2; display: flex; align-items: center; gap: 7px; text-align: left; }
+  .history-meta b,
+  .history-meta em,
+  .history-meta small { display: inline; }
+  .history-list article > button { grid-column: 2; justify-self: start; }
+  .preference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 520px) {
+  .workspace-frame { grid-template-columns: 62px minmax(0, 1fr); }
+  .workspace-rail .rail-logo { width: 40px; height: 40px; min-height: 40px; font-size: 19px; }
+  .workspace-rail button { min-height: 47px; font-size: 0; }
+  .workspace-rail button span { font-size: 17px; }
+  .workspace-top > div > button { display: none; }
+  .workspace-top > div > b { display: grid; }
+  .workspace-location { max-width: 200px; font-size: var(--text-body-sm); }
+  .view-heading h2 { font-size: 26px; }
+  .view-heading > b { display: none; }
+  .reference-hero h1 { font-size: 34px; }
+  .invite-head,
+  .room-head,
+  .profile-hero,
+  .friend-identity,
+  .security-foot { align-items: flex-start; flex-direction: column; }
+  .invite-clock { width: 100%; text-align: left; }
+  .invite-summary { grid-template-columns: repeat(2, 1fr); }
+  .same-frequency-push { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .same-frequency-push b { white-space: normal; }
+  .room-side { grid-template-columns: 1fr; }
+  .reconnect-people,
+  .relationship-grid { grid-template-columns: 1fr; }
+  .proof-grid,
+  .safety-rule-grid { grid-template-columns: 1fr; }
+  .friend-identity-actions { width: 100%; flex-wrap: wrap; }
+  .friend-code-head { grid-template-columns: 1fr auto; }
+  .friend-code-head > div { grid-row: 1; grid-column: 1 / -1; }
+  .friend-code-head > button:first-child { grid-row: 2; }
+  .friend-code-head > button:last-child { grid-row: 2; }
+  .preference-grid,
+  .preset-locations { grid-template-columns: 1fr; }
+  .onboarding-actions,
+  .calendar-modal-actions { flex-direction: column; }
+  .onboarding-actions button,
+  .calendar-modal-actions button { width: 100%; }
+  .action-modal,
+  .onboarding-card,
+  .scan-modal { padding: 23px 16px; }
+  .manual-friend-code { grid-template-columns: 1fr; }
+  .amap-fallback { align-items: flex-start; flex-direction: column; }
+}
