@@ -1,0 +1,155 @@
+/* Modal surfaces live outside .workspace-main, so their colors are fully explicit. */
+.modal-layer,
+.onboarding-layer,
+.scan-layer {
+  position: fixed;
+  z-index: 150;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 20px;
+  background: rgb(0 65 50 / 28%);
+  backdrop-filter: blur(10px);
+}
+
+.action-modal,
+.onboarding-card,
+.scan-modal {
+  position: relative;
+  width: min(540px, 96vw);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-cream);
+  color: var(--color-deep);
+  padding: 28px;
+  box-shadow: 0 26px 72px rgb(0 65 50 / 22%);
+}
+
+.action-modal > span,
+.scan-modal > span,
+.onboarding-card > em {
+  color: var(--color-success);
+  font-size: var(--text-caption);
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+}
+
+.action-modal h2,
+.scan-modal h2,
+.onboarding-card h2 {
+  margin: 7px 0;
+  color: var(--color-deep);
+  font-family: var(--font-display);
+  font-size: 28px;
+}
+
+.action-modal > p,
+.scan-modal > p,
+.onboarding-card > p {
+  color: var(--color-text-muted);
+  font-size: var(--text-body-sm);
+  line-height: 1.65;
+}
+
+.action-modal label { display: block; margin-top: 13px; color: var(--color-text-muted); font-size: var(--text-caption); font-weight: 700; }
+.action-modal label input,
+.action-modal label select { margin-top: 6px; }
+
+.modal-close,
+.scan-modal > button:first-child {
+  position: absolute;
+  top: 14px;
+  right: 15px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-deep);
+  padding: 0;
+  font-size: 20px;
+}
+
+.modal-primary { width: 100%; margin-top: 17px; }
+
+.onboarding-card { width: min(760px, 96vw); }
+.onboarding-mark { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 16px; border-radius: 15px; background: var(--color-yellow); color: var(--color-deep); font-family: var(--font-display); font-size: 21px; font-weight: 900; }
+.preference-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 18px 0; }
+.preference-grid button { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 52px; border: 1px solid var(--color-border); border-radius: 11px; background: var(--color-surface); color: var(--color-deep); padding: 9px; text-align: left; font-size: var(--text-caption); }
+.preference-grid button:hover { border-color: var(--color-lime); background: var(--color-surface-soft); }
+.preference-grid button.selected { border-color: var(--color-lime); background: var(--color-mint); }
+.preference-grid button > span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--color-surface-strong); }
+.preference-grid button > i { color: var(--color-success); font-style: normal; }
+.onboarding-actions { display: flex; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px solid var(--color-border); }
+
+.locate-button { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; margin: 16px 0 9px; border: 1px solid var(--color-lime); border-radius: 12px; background: var(--color-mint); color: var(--color-deep); padding: 11px; text-align: left; }
+.locate-button i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--color-surface); font-style: normal; }
+.locate-button b,
+.locate-button small { display: block; }
+.locate-button b { font-size: var(--text-body-sm); }
+.locate-button small { margin-top: 3px; color: var(--color-text-muted); font-size: var(--text-label); }
+.locate-button em { color: var(--color-success); font-size: var(--text-caption); font-style: normal; font-weight: 900; }
+.preset-locations { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+.preset-locations button { border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); color: var(--color-deep); padding: 9px; text-align: left; }
+.preset-locations button:hover,
+.preset-locations button.selected { border-color: var(--color-lime); background: var(--color-mint); }
+.preset-locations b,
+.preset-locations span { display: block; }
+.preset-locations b { font-size: var(--text-caption); }
+.preset-locations span { margin-top: 3px; color: var(--color-text-muted); font-size: var(--text-label); }
+.privacy-note { margin-top: 10px; color: var(--color-text-muted); text-align: center; font-size: var(--text-label); }
+
+/* AMap integration and fallback. */
+.amap-shell { position: relative; height: 320px; overflow: hidden; margin: 15px 0; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-mint); }
+.amap-shell.compact { height: 250px; }
+.amap-container { width: 100%; height: 100%; }
+.amap-status { position: absolute; z-index: 4; inset: 0; display: grid; place-items: center; background: rgb(255 251 226 / 92%); color: var(--color-text-muted); font-size: var(--text-body); font-weight: 800; }
+.amap-status.error { color: var(--color-danger); }
+.amap-brand { position: absolute; z-index: 3; top: 13px; left: 13px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--color-border); border-radius: 999px; background: rgb(255 251 226 / 94%); color: var(--color-deep); padding: 7px 10px; box-shadow: var(--shadow-xs); }
+.amap-brand span { color: var(--color-success); font-size: var(--text-caption); font-weight: 900; }
+.amap-brand small { color: var(--color-text-muted); font-size: var(--text-label); }
+.amap-pin { display: flex; align-items: center; gap: 5px; border: 0; background: transparent; padding: 0; white-space: nowrap; filter: drop-shadow(0 5px 8px rgb(0 65 50 / 20%)); }
+.amap-pin span { display: grid; place-items: center; width: 34px; height: 34px; border: 3px solid var(--color-cream); border-radius: 50% 50% 50% 12px; background: var(--color-lime); color: var(--color-deep); transform: rotate(-45deg); font-size: var(--text-caption); font-weight: 900; }
+.amap-pin b { border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-cream); color: var(--color-deep); padding: 5px 7px; font-size: var(--text-caption); }
+.amap-pin.selected span { background: var(--color-yellow); transform: rotate(-45deg) scale(1.1); }
+.amap-pin.user span { border-radius: 50%; background: var(--color-deep); color: var(--color-cream); transform: none; }
+.amap-fallback { display: flex; align-items: center; justify-content: space-between; gap: 15px; min-height: 180px; margin: 15px 0; border: 1px dashed var(--color-border-strong); border-radius: 16px; background: var(--color-mint); color: var(--color-deep); padding: 21px; }
+.amap-fallback.compact { min-height: 140px; }
+.amap-fallback > div { display: flex; align-items: center; gap: 11px; }
+.amap-fallback > div > span { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; background: var(--color-yellow); font-size: 18px; font-weight: 900; }
+.amap-fallback b { display: block; font-size: var(--text-body); }
+.amap-fallback p { margin: 4px 0 0; color: var(--color-text-muted); font-size: var(--text-caption); }
+.amap-fallback > small { border-radius: 999px; background: var(--color-surface); color: var(--color-success); padding: 6px 8px; font-size: var(--text-label); }
+
+/* Calendar confirmation. */
+.calendar-modal { width: min(520px, 96vw); }
+.calendar-preview { display: grid; gap: 1px; overflow: hidden; margin-top: 16px; border: 1px solid var(--color-border); border-radius: 13px; background: var(--color-border); }
+.calendar-preview > div { display: grid; grid-template-columns: 75px 1fr; gap: 9px; background: var(--color-surface); padding: 10px; }
+.calendar-preview span { color: var(--color-text-muted); font-size: var(--text-caption); }
+.calendar-preview b { font-size: var(--text-caption); }
+.calendar-preview small { display: block; margin-top: 3px; color: var(--color-text-muted); font-size: var(--text-label); }
+.calendar-privacy { display: flex; align-items: flex-start; gap: 9px; margin-top: 12px; border-radius: 11px; background: var(--color-mint); color: var(--color-deep); padding: 10px; }
+.calendar-privacy i { font-style: normal; font-weight: 900; }
+.calendar-privacy b,
+.calendar-privacy small { display: block; }
+.calendar-privacy b { font-size: var(--text-caption); }
+.calendar-privacy small { margin-top: 3px; color: var(--color-text-muted); font-size: var(--text-label); }
+.calendar-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+/* QR scanner. */
+.scan-modal { width: min(480px, 96vw); text-align: center; }
+.camera-frame { position: relative; overflow: hidden; width: min(300px, 100%); aspect-ratio: 1; margin: 15px auto; border: 6px solid var(--color-deep); border-radius: 18px; background: var(--color-mint); }
+.camera-frame video { width: 100%; height: 100%; object-fit: cover; }
+.camera-frame i { position: absolute; width: 28px; height: 28px; border-color: var(--color-yellow); border-style: solid; }
+.camera-frame i:nth-of-type(1) { top: 10px; left: 10px; border-width: 3px 0 0 3px; }
+.camera-frame i:nth-of-type(2) { top: 10px; right: 10px; border-width: 3px 3px 0 0; }
+.camera-frame i:nth-of-type(3) { right: 10px; bottom: 10px; border-width: 0 3px 3px 0; }
+.camera-frame i:nth-of-type(4) { bottom: 10px; left: 10px; border-width: 0 0 3px 3px; }
+.manual-friend-code { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+.scan-modal > small { display: block; margin-top: 9px; color: var(--color-text-muted); font-size: var(--text-label); }

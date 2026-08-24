@@ -1,0 +1,63 @@
+:root {
+  color-scheme: light;
+
+  /* Spring Sunshine palette supplied by the product owner. */
+  --color-deep: #004132;
+  --color-lime: #8cb818;
+  --color-yellow: #fadf2e;
+  --color-mint: #d0ebb7;
+  --color-cream: #fffbe2;
+
+  /* Semantic colors derived from the palette. */
+  --color-canvas: #edf7e6;
+  --color-surface: #fffef5;
+  --color-surface-soft: #f5fae9;
+  --color-surface-strong: #e2f2d2;
+  --color-text: #004132;
+  --color-text-muted: #587268;
+  --color-text-faint: #7f9188;
+  --color-border: #c9ddaF;
+  --color-border-strong: #aeca8e;
+  --color-success: #4f8d28;
+  --color-danger: #a43f36;
+  --color-danger-soft: #f8e2d7;
+
+  --shadow-xs: 0 2px 8px rgb(0 65 50 / 5%);
+  --shadow-sm: 0 8px 22px rgb(0 65 50 / 8%);
+  --shadow-md: 0 18px 44px rgb(0 65 50 / 12%);
+  --shadow-focus: 0 0 0 4px rgb(140 184 24 / 24%);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+
+  /* Typography: native Chinese UI sans + a locally hosted mono accent. */
+  --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: "Maple Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* A restrained product type scale. Display sizes remain page-specific. */
+  --text-label: 11px;
+  --text-caption: 12px;
+  --text-body-sm: 13px;
+  --text-body: 14px;
+  --text-title: 16px;
+  --text-section: 20px;
+  --text-page: 28px;
+
+  --leading-tight: 1.22;
+  --leading-control: 1.35;
+  --leading-body: 1.6;
+  --tracking-tight: -0.025em;
+  --tracking-label: 0.06em;
+
+  /* Backward-compatible names used by a few map and chart styles. */
+  --orange: var(--color-lime);
+  --orange2: var(--color-yellow);
+  --ink: var(--color-deep);
+  --paper: var(--color-cream);
+  --line: var(--color-border);
+  --green: var(--color-success);
+  --muted: var(--color-text-muted);
+}

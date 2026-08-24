@@ -1,0 +1,186 @@
+/* Buttons use semantic classes and low-specificity groups—no global active/selected overrides. */
+:where(
+  .reference-match-button,
+  .wide-button,
+  .form-activity,
+  .modal-primary,
+  .report-match,
+  .verification-submit,
+  .chsi-button,
+  .friend-add,
+  .friend-accept,
+  .mutual-button,
+  .simulate-finish,
+  .mobile-calendar-button,
+  .partner-copy > button,
+  .business-dashboard > div:first-child > button,
+  .history-empty > button,
+  .history-list article > button,
+  .scanned-friend-banner > button:not(.scan-dismiss),
+  .friend-search > button,
+  .manual-friend-code > button
+) {
+  min-height: 42px;
+  border: 1px solid var(--color-lime);
+  border-radius: 10px;
+  background: var(--color-lime);
+  color: var(--color-deep);
+  padding: 10px 16px;
+  box-shadow: var(--shadow-xs);
+  font-weight: 900;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+
+:where(
+  .reference-match-button,
+  .wide-button,
+  .form-activity,
+  .modal-primary,
+  .report-match,
+  .verification-submit,
+  .chsi-button,
+  .friend-add,
+  .friend-accept,
+  .mutual-button,
+  .simulate-finish,
+  .mobile-calendar-button,
+  .partner-copy > button,
+  .business-dashboard > div:first-child > button,
+  .history-empty > button,
+  .history-list article > button,
+  .scanned-friend-banner > button:not(.scan-dismiss),
+  .friend-search > button,
+  .manual-friend-code > button
+):hover {
+  border-color: var(--color-deep);
+  background: var(--color-deep);
+  color: var(--color-cream);
+  transform: translateY(-1px);
+}
+
+:where(
+  .refresh-home,
+  .outline-button,
+  .test-back,
+  .quiz-back,
+  .quiz-previous,
+  .report-retry,
+  .mbti-previous,
+  .mbti-result-head button,
+  .friend-code-head > button,
+  .friend-code-stage aside > button,
+  .security-head > button,
+  .security-foot button,
+  .tag-actions > button:not(.primary),
+  .calendar-modal-actions > button:first-child,
+  .onboarding-actions .discover-personality
+) {
+  min-height: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-deep);
+  padding: 8px 13px;
+  font-weight: 800;
+  transition: background .18s ease, border-color .18s ease;
+}
+
+:where(
+  .refresh-home,
+  .outline-button,
+  .test-back,
+  .quiz-back,
+  .quiz-previous,
+  .report-retry,
+  .mbti-previous,
+  .mbti-result-head button,
+  .friend-code-head > button,
+  .friend-code-stage aside > button,
+  .security-head > button,
+  .security-foot button,
+  .tag-actions > button:not(.primary),
+  .calendar-modal-actions > button:first-child,
+  .onboarding-actions .discover-personality
+):hover {
+  border-color: var(--color-lime);
+  background: var(--color-mint);
+}
+
+.tag-actions .primary,
+.calendar-modal-actions > button:last-child,
+.onboarding-actions .save-preferences {
+  min-height: 42px;
+  border: 1px solid var(--color-deep);
+  border-radius: 10px;
+  background: var(--color-deep);
+  color: var(--color-cream);
+  padding: 10px 16px;
+  font-weight: 900;
+}
+
+.tag-actions .primary:hover,
+.calendar-modal-actions > button:last-child:hover,
+.onboarding-actions .save-preferences:hover {
+  border-color: var(--color-lime);
+  background: var(--color-lime);
+  color: var(--color-deep);
+}
+
+:where(
+  .category-tabs button,
+  .partner-tabs button,
+  .scene-inline-switch button,
+  .plaza-scene-switch button,
+  .step1-category-tabs button,
+  .semantic-examples button,
+  .question button,
+  .fee-choice button,
+  .review-tags button
+) {
+  min-height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-deep);
+  padding: 7px 12px;
+  font-size: var(--text-body);
+  font-weight: 800;
+}
+
+:where(
+  .category-tabs button,
+  .partner-tabs button,
+  .scene-inline-switch button,
+  .plaza-scene-switch button,
+  .step1-category-tabs button,
+  .semantic-examples button,
+  .question button,
+  .fee-choice button,
+  .review-tags button
+):hover {
+  border-color: var(--color-lime);
+  background: var(--color-surface-soft);
+}
+
+:where(
+  .category-tabs button.active,
+  .partner-tabs button.active,
+  .scene-inline-switch button.active,
+  .plaza-scene-switch button.active,
+  .step1-category-tabs button.active,
+  .question button.selected,
+  .fee-choice button.selected
+) {
+  border-color: var(--color-lime);
+  background: var(--color-mint);
+  color: var(--color-deep);
+}
+
+button:disabled,
+.form-activity:disabled {
+  border-color: #d6dfcf;
+  background: #e8eee3;
+  color: #86928a;
+  box-shadow: none;
+  transform: none;
+}
