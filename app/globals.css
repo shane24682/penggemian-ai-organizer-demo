@@ -709,6 +709,19 @@ input,select,textarea { border:1px solid #dce5d9; border-radius:10px; background
 .workspace-main .step1-section-head b { color:#164e37; font-size:17px; }
 .workspace-main .step1-section-head span { color:#789080; font-size:12px; }
 .workspace-main .activity-icon { display:grid !important; place-items:center; width:42px; height:42px; border-radius:14px; background:#e2f2dd; color:#337d45; font-size:18px; }
+.workspace-main .activity-icon {
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  font-size:22px;
+  line-height:1;
+  text-shadow:0 3px 5px rgba(35,77,48,.12);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 5px 12px rgba(58,102,68,.1);
+}
+.reference-icon{
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  font-size:30px;
+  line-height:1;
+  text-shadow:0 4px 8px rgba(35,77,48,.14);
+}
 .workspace-main .demo-shell .search-panel .activity-search { grid-template-columns:28px minmax(0,1fr) auto !important; align-items:center; }
 .workspace-main .demo-shell .search-panel .activity-search > span { color:#55965c; font-size:18px; text-align:center; }
 .workspace-main .view-heading { display:flex; justify-content:space-between; gap:20px; align-items:flex-end; margin-bottom:15px; }
