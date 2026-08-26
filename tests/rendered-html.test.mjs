@@ -26,16 +26,16 @@ test("server-renders the 碰个面 product shell", async () => {
 });
 
 test("ships algorithm-backed MBTI, friend code and verification flows", async () => {
-  const [page, mbti, friendCode, qr, account] = await Promise.all([
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  const [workspace, mbti, friendCode, qr, account] = await Promise.all([
+    readFile(new URL("../features/workspace/PenggemianWorkspace.tsx", import.meta.url), "utf8"),
     readFile(new URL("../lib/mbti.ts", import.meta.url), "utf8"),
     readFile(new URL("../lib/friend-code.ts", import.meta.url), "utf8"),
     readFile(new URL("../lib/vendor/qrcode/index.js", import.meta.url), "utf8"),
     readFile(new URL("../components/AccountCenter.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(page, /MbtiTest/);
-  assert.match(page, /FriendCodePanel/);
-  assert.match(page, /AccountCenter/);
+  assert.match(workspace, /MbtiTest/);
+  assert.match(workspace, /FriendCodePanel/);
+  assert.match(workspace, /AccountCenter/);
   assert.match(mbti, /calculateMbti/);
   assert.match(mbti, /scores\[question\.axis\]/);
   assert.match(friendCode, /fnv1a/);
@@ -49,17 +49,17 @@ test("ships algorithm-backed MBTI, friend code and verification flows", async ()
 });
 
 test("ships double-consent invitations, activity rooms and post-event relationships", async () => {
-  const [page, invitationLogic, invitationView, room, postActivity, safety] = await Promise.all([
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  const [workspace, invitationLogic, invitationView, room, postActivity, safety] = await Promise.all([
+    readFile(new URL("../features/workspace/PenggemianWorkspace.tsx", import.meta.url), "utf8"),
     readFile(new URL("../lib/invitations.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/InvitationMatch.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/ActivityRoom.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/PostActivity.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/SafetyControls.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(page, /InvitationMatch/);
-  assert.match(page, /ActivityRoom/);
-  assert.match(page, /PostActivity/);
+  assert.match(workspace, /InvitationMatch/);
+  assert.match(workspace, /ActivityRoom/);
+  assert.match(workspace, /PostActivity/);
   assert.match(invitationLogic, /respondToInvitation/);
   assert.match(invitationLogic, /promoteNext/);
   assert.match(invitationLogic, /maskDistance/);
@@ -75,23 +75,23 @@ test("ships double-consent invitations, activity rooms and post-event relationsh
   assert.match(safety, /女生局/);
   assert.match(safety, /好友局/);
   assert.match(safety, /始终隐藏：宿舍与实时位置/);
-  assert.match(page, /type="datetime-local"/);
-  assert.match(page, /人均场地费/);
-  assert.match(page, /AI 服务费/);
-  assert.doesNotMatch(page, /席位价格/);
-  assert.doesNotMatch(page, /Demo 数据说明/);
+  assert.match(workspace, /type="datetime-local"/);
+  assert.match(workspace, /人均场地费/);
+  assert.match(workspace, /AI 服务费/);
+  assert.doesNotMatch(workspace, /席位价格/);
+  assert.doesNotMatch(workspace, /Demo 数据说明/);
 });
 
 test("ships scene-aware, explainable matching preferences", async () => {
-  const [page, matching, invitation] = await Promise.all([
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  const [workspace, matching, invitation] = await Promise.all([
+    readFile(new URL("../features/workspace/PenggemianWorkspace.tsx", import.meta.url), "utf8"),
     readFile(new URL("../lib/matching.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/InvitationMatch.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(page, /活动选择/);
-  assert.match(page, /偏好选择/);
-  assert.match(page, /开始碰面/);
-  assert.match(page, /更多组队偏好/);
+  assert.match(workspace, /活动选择/);
+  assert.match(workspace, /偏好选择/);
+  assert.match(workspace, /开始碰面/);
+  assert.match(workspace, /更多组队偏好/);
   assert.match(matching, /MatchBreakdown/);
   assert.match(matching, /averageMatch/);
   assert.match(invitation, /匹配度/);
@@ -101,7 +101,7 @@ test("ships scene-aware, explainable matching preferences", async () => {
 
 test("ships configurable AMap venue and location integration", async () => {
   const mapSource = await readFile(new URL("../components/AmapVenueMap.tsx", import.meta.url), "utf8");
-  const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const workspaceSource = await readFile(new URL("../features/workspace/PenggemianWorkspace.tsx", import.meta.url), "utf8");
   const envSource = await readFile(new URL("../.env.example", import.meta.url), "utf8");
   const locationSource = await readFile(new URL("../lib/location.ts", import.meta.url), "utf8");
   const roomSource = await readFile(new URL("../components/ActivityRoom.tsx", import.meta.url), "utf8");
@@ -110,7 +110,7 @@ test("ships configurable AMap venue and location integration", async () => {
   assert.match(mapSource, /VITE_AMAP_KEY/);
   assert.match(mapSource, /AMap\.Scale/);
   assert.match(mapSource, /map\.on\("click"/);
-  assert.match(pageSource, /<AmapVenueMap/);
+  assert.match(workspaceSource, /<AmapVenueMap/);
   assert.match(envSource, /VITE_AMAP_SECURITY_CODE/);
   assert.match(envSource, /VITE_AMAP_SERVICE_HOST/);
   assert.match(locationSource, /https:\/\/uri\.amap\.com\/navigation/);
@@ -121,10 +121,10 @@ test("ships configurable AMap venue and location integration", async () => {
 });
 
 test("ships a device-aware mobile calendar import flow", async () => {
-  const [calendar, room, page] = await Promise.all([
+  const [calendar, room, workspace] = await Promise.all([
     readFile(new URL("../lib/calendar.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/ActivityRoom.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../features/workspace/PenggemianWorkspace.tsx", import.meta.url), "utf8"),
   ]);
 
   assert.match(calendar, /getCalendarDeviceProfile/);
@@ -136,5 +136,11 @@ test("ships a device-aware mobile calendar import flow", async () => {
   assert.match(room, /确认并打开日历/);
   assert.doesNotMatch(room, />系统日历</);
   assert.doesNotMatch(room, />钉钉日历</);
-  assert.match(page, /profile\.guidance/);
+  assert.match(workspace, /profile\.guidance/);
+});
+
+test("keeps the Next.js page entry focused on route composition", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /PenggemianWorkspace/);
+  assert.doesNotMatch(page, /useState|localStorage|InvitationMatch|ActivityRoom/);
 });
