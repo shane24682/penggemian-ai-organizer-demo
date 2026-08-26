@@ -19,8 +19,8 @@ test("server-renders the 碰个面 product shell", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
   assert.match(html, /<title>碰个面｜AI校园活动主理人<\/title>/i);
+  assert.match(html, /今天，遇见同频的人/);
   assert.match(html, /开始匹配/);
-  assert.match(html, /测试中心/);
   assert.match(html, /我的/);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview/i);
 });
@@ -68,12 +68,35 @@ test("ships double-consent invitations, activity rooms and post-event relationsh
   assert.match(room, /场馆投票/);
   assert.match(room, /临时退出并通知候补/);
   assert.match(postActivity, /双方同意/);
+  assert.match(postActivity, /私密反馈/);
+  assert.match(postActivity, /不会影响匹配度/);
   assert.match(postActivity, /固定每周六复组/);
-  assert.match(safety, /屏蔽通讯录/);
+  assert.match(safety, /男生局/);
+  assert.match(safety, /女生局/);
+  assert.match(safety, /好友局/);
   assert.match(safety, /始终隐藏：宿舍与实时位置/);
   assert.match(page, /type="datetime-local"/);
-  assert.match(page, /席位价格/);
+  assert.match(page, /人均场地费/);
+  assert.match(page, /AI 服务费/);
+  assert.doesNotMatch(page, /席位价格/);
   assert.doesNotMatch(page, /Demo 数据说明/);
+});
+
+test("ships scene-aware, explainable matching preferences", async () => {
+  const [page, matching, invitation] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/matching.ts", import.meta.url), "utf8"),
+    readFile(new URL("../components/InvitationMatch.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(page, /活动选择/);
+  assert.match(page, /偏好选择/);
+  assert.match(page, /开始碰面/);
+  assert.match(page, /更多组队偏好/);
+  assert.match(matching, /MatchBreakdown/);
+  assert.match(matching, /averageMatch/);
+  assert.match(invitation, /匹配度/);
+  assert.match(invitation, /查看匹配分析/);
+  assert.match(invitation, /创建临时房间/);
 });
 
 test("ships configurable AMap venue and location integration", async () => {

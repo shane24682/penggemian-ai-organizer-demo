@@ -21,6 +21,8 @@ export type IconName =
   | "search"
   | "shield-check"
   | "smartphone"
+  | "thumbs-down"
+  | "thumbs-up"
   | "user"
   | "users"
   | "x"
@@ -49,6 +51,8 @@ const icons: Record<IconName, ReactNode> = {
   search: <><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></>,
   "shield-check": <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></>,
   smartphone: <><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></>,
+  "thumbs-down": <><path d="M17 13V3H6.7a2 2 0 0 0-1.9 1.4l-2.2 7A2 2 0 0 0 4.5 14H9l-1 4.2A2.2 2.2 0 0 0 10.2 21L15 15v-2Z"/><path d="M17 4h4v9h-4"/></>,
+  "thumbs-up": <><path d="M7 11v10h10.3a2 2 0 0 0 1.9-1.4l2.2-7A2 2 0 0 0 19.5 10H15l1-4.2A2.2 2.2 0 0 0 13.8 3L9 9v2Z"/><path d="M7 20H3v-9h4"/></>,
   user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
   users: <><circle cx="9" cy="8" r="3"/><path d="M3 19a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5 4.5"/></>,
   x: <path d="M6 6l12 12M18 6 6 18"/>,

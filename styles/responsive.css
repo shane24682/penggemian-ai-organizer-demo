@@ -45,6 +45,7 @@
   .step1-recommend-grid,
   .step1-quick-grid,
   .form-grid,
+  .online-preference-grid,
   .candidate-list,
   .post-grid,
   .relationship-actions,
@@ -95,6 +96,9 @@
   .relationship-grid { grid-template-columns: 1fr; }
   .proof-grid,
   .safety-rule-grid { grid-template-columns: 1fr; }
+  .online-preferences summary { align-items: flex-start; flex-direction: column; gap: 3px; }
+  .participant-feedback-list article { grid-template-columns: 30px minmax(0, 1fr); }
+  .participant-feedback-list article > div:last-child { grid-column: 2; flex-wrap: wrap; }
   .friend-identity-actions { width: 100%; flex-wrap: wrap; }
   .friend-code-head { grid-template-columns: 1fr auto; }
   .friend-code-head > div { grid-row: 1; grid-column: 1 / -1; }
