@@ -1,6 +1,24 @@
 import { semanticOverlap } from "./discovery";
 
 export type MatchLevel = "新手" | "入门" | "进阶";
+export type MatchScene = "offline" | "online" | "study";
+export type AudienceMode = "campus" | "men" | "women" | "friends";
+
+export type OnlinePreferences = {
+  rank: string;
+  server: string;
+  onlineTime: string;
+  language: string;
+  voice: "required" | "preferred" | "off";
+};
+
+export type MatchBreakdown = {
+  key: string;
+  label: string;
+  weight: number;
+  score: number;
+  detail: string;
+};
 
 export type MatchCandidate = {
   id: string;
@@ -20,6 +38,15 @@ export type MatchCandidate = {
   roles?: string[];
   verifiedSkills?: string[];
   weeklyHours?: number;
+  gender?: "male" | "female";
+  isFriend?: boolean;
+  onlineProfile?: {
+    rank: string;
+    server: string;
+    onlineTimes: string[];
+    languages: string[];
+    voice: "required" | "preferred" | "off";
+  };
 };
 
 export type MatchRequest = {
@@ -34,17 +61,22 @@ export type MatchRequest = {
   location?: {lat:number;lng:number};
   requiredRole?: string;
   requiresVerifiedSkill?: boolean;
+  weeklyHours?: number;
+  scene: MatchScene;
+  audienceMode: AudienceMode;
+  onlinePreferences?: OnlinePreferences;
 };
 
 export type ScoredCandidate = MatchCandidate & {
-  score: number;
+  matchPercent: number;
+  breakdown: MatchBreakdown[];
   reasons: string[];
 };
 
 export type MatchPlan = {
   selected: ScoredCandidate[];
   backups: ScoredCandidate[];
-  averageScore: number;
+  averageMatch: number;
   factors: string[];
 };
 
@@ -98,47 +130,119 @@ const levelScore = (requested: string, candidate: MatchLevel) => {
   return 6;
 };
 
+const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
+const factor = (key: string, label: string, weight: number, fit: number, detail: string): MatchBreakdown => ({
+  key,
+  label,
+  weight,
+  score: Math.round(weight * clamp(fit)),
+  detail,
+});
+
+const timeFit = (requestTime: string, availability: string[]) =>
+  availability.some(slot => requestTime.includes(slot) || slot.includes(requestTime)) ? 1 : 0.42;
+
+const candidateGender = (candidate: MatchCandidate) =>
+  candidate.gender || (Number(candidate.id.replace(/\D/g, "")) % 2 === 0 ? "male" : "female");
+
+const candidateIsFriend = (candidate: MatchCandidate) =>
+  candidate.isFriend ?? (Number(candidate.id.replace(/\D/g, "")) <= 8 || Number(candidate.id.replace(/\D/g, "")) % 3 === 0);
+
+const defaultRanks = ["黄金", "铂金", "钻石", "星耀"];
+const defaultServers = ["微信区", "QQ区", "国服", "不限区服"];
+const defaultOnlineTimes = ["工作日 20:00–23:00", "周末下午", "周末晚间"];
+const onlineProfileOf = (candidate: MatchCandidate) => candidate.onlineProfile || {
+  rank: defaultRanks[Number(candidate.id.replace(/\D/g, "")) % defaultRanks.length],
+  server: defaultServers[Number(candidate.id.replace(/\D/g, "")) % defaultServers.length],
+  onlineTimes: [defaultOnlineTimes[Number(candidate.id.replace(/\D/g, "")) % defaultOnlineTimes.length]],
+  languages: Number(candidate.id.replace(/\D/g, "")) % 3 === 0 ? ["普通话", "英语"] : ["普通话"],
+  voice: Number(candidate.id.replace(/\D/g, "")) % 4 === 0 ? "off" as const : "preferred" as const,
+};
+
+const rankFit = (requested: string, actual: string) => {
+  if (requested === "不限段位" || requested === actual) return 1;
+  const order = ["青铜", "白银", "黄金", "铂金", "钻石", "星耀", "王者"];
+  const distance = Math.abs(order.indexOf(requested) - order.indexOf(actual));
+  return distance === 1 ? 0.72 : 0.38;
+};
+
 export function scoreCandidate(request: MatchRequest, candidate: MatchCandidate): ScoredCandidate {
   const distanceKm = request.location ? haversineKm(request.location, candidate) : candidate.distanceKm;
-  let score = 0;
-  const reasons: string[] = [];
-
-  if (candidate.campus === request.campus) { score += 25; reasons.push("同校身份"); }
-  if (candidate.interests.includes(request.activity)) { score += 28; reasons.push("同活动兴趣"); }
-  else if (candidate.categories.includes(request.category)) { score += 18; reasons.push("同类兴趣"); }
-  if (candidate.availability.includes(request.time)) { score += 20; reasons.push("时间一致"); }
-  const fit = levelScore(request.level, candidate.level);
-  score += fit;
-  if (fit >= 9) reasons.push("水平接近");
   const socialOverlap = candidate.socialTags.filter(tag=>request.personalityTags.includes(tag)).length;
-  if (socialOverlap) { score += Math.min(8, socialOverlap * 4); reasons.push("相处偏好相近"); }
   const tagHits = semanticOverlap(request.personalTags || [], candidate.profileTags || []);
-  if (tagHits.length) { score += Math.min(18, tagHits.length * 6); reasons.push(`同频标签：${tagHits.slice(0,2).join("、")}`); }
-  score += Math.round(candidate.trustRate * 7);
-  if (candidate.trustRate >= .95) reasons.push("高守约率");
-  if (distanceKm <= 2) { score += 5; reasons.push("距离较近"); }
-  if (request.requiredRole && candidate.roles?.includes(request.requiredRole)) { score += 22; reasons.push("角色能力匹配"); }
-  if (request.requiresVerifiedSkill && candidate.verifiedSkills?.length) { score += 12; reasons.push("能力材料已核验"); }
-  if (request.requiresVerifiedSkill && (candidate.weeklyHours || 0) >= 8) { score += 6; reasons.push("投入时间达标"); }
+  const exactInterest = candidate.interests.includes(request.activity);
+  const categoryInterest = candidate.categories.includes(request.category);
+  let breakdown: MatchBreakdown[];
 
-  return {...candidate, distanceKm, score: Math.min(100, score), reasons};
+  if (request.scene === "online") {
+    const preferences = request.onlinePreferences || {rank:"不限段位",server:"不限区服",onlineTime:"周末晚间",language:"普通话",voice:"preferred" as const};
+    const profile = onlineProfileOf(candidate);
+    const serverMatches = preferences.server === "不限区服" || profile.server === "不限区服" || profile.server === preferences.server;
+    const onlineTimeMatches = profile.onlineTimes.includes(preferences.onlineTime);
+    const languageMatches = profile.languages.includes(preferences.language);
+    const voiceMatches = preferences.voice === "preferred" || profile.voice === preferences.voice;
+    const tagFit = exactInterest ? 1 : categoryInterest ? .78 : tagHits.length ? .68 : socialOverlap ? .48 : .28;
+    breakdown = [
+      factor("rank", "段位", 25, rankFit(preferences.rank, profile.rank), `段位 ${profile.rank}`),
+      factor("time", "在线时间", 25, onlineTimeMatches ? 1 : .45, onlineTimeMatches ? "在线时间一致" : "在线时间部分重合"),
+      factor("server", "区服", 20, serverMatches ? 1 : .25, serverMatches ? `同区服 · ${profile.server}` : `区服待协调 · ${profile.server}`),
+      factor("language", "语言与语音", 10, (languageMatches ? .55 : .2) + (voiceMatches ? .45 : .1), languageMatches && voiceMatches ? "语言与开麦偏好一致" : "沟通偏好部分一致"),
+      factor("tags", "游戏与标签", 10, tagFit, exactInterest ? "同游戏兴趣" : tagHits.length ? `同频标签：${tagHits.slice(0,2).join("、")}` : "相近游戏偏好"),
+      factor("trust", "守约", 10, candidate.trustRate, `守约率 ${Math.round(candidate.trustRate * 100)}%`),
+    ];
+  } else if (request.scene === "study") {
+    const roleFit = request.requiredRole && candidate.roles?.includes(request.requiredRole) ? 1 : .35;
+    const skillFit = candidate.verifiedSkills?.length ? 1 : 0;
+    const hourTarget = Math.max(1, request.weeklyHours || 6);
+    const hourFit = clamp((candidate.weeklyHours || 0) / hourTarget);
+    const abilityFit = roleFit * .55 + skillFit * .3 + hourFit * .15;
+    const goalFit = exactInterest ? 1 : categoryInterest ? .75 : tagHits.length ? .7 : .3;
+    const collaborationFit = clamp(.35 + socialOverlap * .2 + (distanceKm <= 3 ? .35 : .12));
+    breakdown = [
+      factor("ability", "能力与角色", 35, abilityFit, roleFit === 1 ? `角色匹配 · ${request.requiredRole}` : "能力材料已核验"),
+      factor("time", "时间投入", 25, timeFit(request.time, candidate.availability) * .65 + hourFit * .35, `${candidate.weeklyHours || 0} 小时/周可投入`),
+      factor("tags", "目标与标签", 20, goalFit, exactInterest ? "目标项目一致" : tagHits.length ? `同频标签：${tagHits.slice(0,2).join("、")}` : "相近学习目标"),
+      factor("collaboration", "协作方式与地点", 10, collaborationFit, distanceKm <= 3 ? "同校且协作距离合适" : "建议线上协作"),
+      factor("trust", "守约", 10, candidate.trustRate, `守约率 ${Math.round(candidate.trustRate * 100)}%`),
+    ];
+  } else {
+    const interestFit = exactInterest ? 1 : categoryInterest ? .74 : tagHits.length ? .62 : socialOverlap ? .42 : .24;
+    const distanceFit = clamp(1 - distanceKm / 6, .22, 1);
+    const levelFit = levelScore(request.level, candidate.level) / 12;
+    breakdown = [
+      factor("interest", "活动与标签", 30, interestFit, exactInterest ? "同活动兴趣" : tagHits.length ? `同频标签：${tagHits.slice(0,2).join("、")}` : "相近活动兴趣"),
+      factor("time", "时间", 25, timeFit(request.time, candidate.availability), timeFit(request.time, candidate.availability) === 1 ? "活动时间一致" : "时间可进一步协调"),
+      factor("location", "地点", 20, distanceFit, distanceKm <= 2 ? "距离较近" : "同校通勤范围"),
+      factor("level", "水平", 15, levelFit, levelFit >= .75 ? "水平接近" : "接受跨水平组队"),
+      factor("trust", "守约", 10, candidate.trustRate, `守约率 ${Math.round(candidate.trustRate * 100)}%`),
+    ];
+  }
+
+  const matchPercent = breakdown.reduce((sum, item) => sum + item.score, 0);
+  const reasons = breakdown.filter(item => item.score >= item.weight * .62).map(item => item.detail);
+  if (tagHits.length && !reasons.some(reason => reason.startsWith("同频标签："))) reasons.unshift(`同频标签：${tagHits.slice(0,2).join("、")}`);
+  return {...candidate, distanceKm, matchPercent, breakdown, reasons};
 }
 
 export function matchUsers(request: MatchRequest, pool = demoCandidates): MatchPlan {
   const ranked = pool
     .filter(candidate=>candidate.trustRate >= .88)
+    .filter(candidate=>candidate.campus === request.campus)
+    .filter(candidate=>request.audienceMode !== "men" || candidateGender(candidate) === "male")
+    .filter(candidate=>request.audienceMode !== "women" || candidateGender(candidate) === "female")
+    .filter(candidate=>request.audienceMode !== "friends" || candidateIsFriend(candidate))
     .filter(candidate=>!request.requiresVerifiedSkill || Boolean(candidate.verifiedSkills?.length && (candidate.weeklyHours || 0) >= 6))
     .map(candidate=>scoreCandidate(request, candidate))
-    .sort((a,b)=>b.score-a.score || b.trustRate-a.trustRate);
+    .sort((a,b)=>b.matchPercent-a.matchPercent || b.trustRate-a.trustRate);
   const selected = ranked.slice(0, Math.max(1, request.seats - 1));
   // 候补池要明显大于成局所需人数；多人拒绝或超时后仍能自动递补。
   const backups = ranked.slice(Math.max(1, request.seats - 1), Math.max(1, request.seats - 1) + 6);
-  const averageScore = selected.length ? Math.round(selected.reduce((sum,user)=>sum+user.score,0)/selected.length) : 0;
+  const averageMatch = selected.length ? Math.round(selected.reduce((sum,user)=>sum+user.matchPercent,0)/selected.length) : 0;
 
   return {
     selected,
     backups,
-    averageScore,
-    factors:["同校身份","活动/品类兴趣","可用时间","水平目标","同频标签语义","守约与距离",...(request.requiresVerifiedSkill?["能力材料核验","项目角色匹配","投入时间"]:[])],
+    averageMatch,
+    factors:selected[0]?.breakdown.map(item => `${item.label} ${item.weight}%`) || [],
   };
 }

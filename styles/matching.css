@@ -312,6 +312,22 @@
 }
 
 .fee-choice p { margin: 3px 0 0; color: var(--color-text-muted); font-size: var(--text-caption); }
+.fee-explainer { grid-template-columns: 1fr auto; }
+.fee-explainer > span { border-radius: 999px; background: var(--color-mint); color: var(--color-deep); padding: 7px 10px; font-size: var(--text-label); font-weight: 900; }
+
+.online-preferences {
+  margin: 14px 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 14px;
+  background: var(--color-surface-soft);
+  padding: 12px;
+}
+.online-preferences summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
+.online-preferences summary::-webkit-details-marker { display: none; }
+.online-preferences summary span { color: var(--color-deep); font-weight: 900; }
+.online-preferences summary small { color: var(--color-text-muted); font-size: var(--text-label); }
+.online-preference-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
+.online-preference-grid label { display: grid; gap: 5px; color: var(--color-text-muted); font-size: var(--text-label); font-weight: 800; }
 
 .question {
   margin-bottom: 14px;
@@ -420,13 +436,22 @@
 .same-frequency-push span { color: var(--color-text-muted); font-size: var(--text-caption); line-height: 1.5; }
 
 .candidate-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.candidate-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 9px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); padding: 9px; }
+.candidate-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: start; gap: 9px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); padding: 9px; }
 .portrait { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--color-mint); color: var(--color-deep); font-size: var(--text-body-sm); font-weight: 900; }
 .candidate-copy > div:first-child { display: flex; align-items: center; gap: 6px; }
 .candidate-copy b { font-size: var(--text-body-sm); }
 .candidate-copy em { color: var(--color-success); font-size: var(--text-label); font-style: normal; font-weight: 900; }
 .candidate-copy p { margin: 3px 0; color: var(--color-text-muted); font-size: var(--text-label); }
 .candidate-copy small { display: inline-block; margin: 2px 3px 0 0; border-radius: 999px; background: var(--color-surface-strong); color: var(--color-text-muted); padding: 3px 5px; font-size: var(--text-label); }
+.match-breakdown { margin-top: 6px; }
+.match-breakdown summary { width: max-content; cursor: pointer; color: var(--color-success); font-size: var(--text-label); font-weight: 800; }
+.match-breakdown > div { display: grid; gap: 5px; margin-top: 7px; }
+.candidate-copy .match-breakdown p { display: grid; grid-template-columns: 110px minmax(60px, 1fr) 36px; align-items: center; gap: 6px; margin: 0; }
+.match-breakdown p > span { color: var(--color-deep); font-size: var(--text-label); }
+.candidate-copy .match-breakdown p > span small { display: block; margin: 0; background: transparent; padding: 0; font-size: 10px; }
+.match-breakdown p > i { height: 5px; overflow: hidden; border-radius: 999px; background: var(--color-surface-strong); }
+.match-breakdown p > i > b { display: block; height: 100%; border-radius: inherit; background: var(--color-lime); }
+.candidate-copy .match-breakdown p > em { color: var(--color-text-muted); text-align: right; font-weight: 800; }
 
 .invite-status { border-radius: 999px; background: #ecefe7; color: var(--color-text-muted); padding: 5px 7px; white-space: nowrap; font-size: var(--text-label); }
 .invite-status.confirmed { background: var(--color-mint); color: var(--color-deep); }
@@ -442,6 +467,10 @@
 
 .venue-lock { border: 1px solid var(--color-border); border-radius: 15px; background: var(--color-surface-soft); padding: 13px; }
 .venue-lock.ready { border-color: var(--color-lime); background: #f7fbe7; }
+.session-lock { border: 1px solid var(--color-border); border-radius: 15px; background: var(--color-surface-soft); padding: 14px; }
+.session-lock.ready { border-color: var(--color-lime); background: #f7fbe7; }
+.session-preferences { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0; }
+.session-preferences span { border-radius: 999px; background: var(--color-surface); color: var(--color-text-muted); padding: 6px 9px; font-size: var(--text-label); }
 .venue-lock-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .venue-lock-head span { color: var(--color-success); font-size: var(--text-label); }
 .venue-lock-head h3 { margin: 4px 0 0; font-size: var(--text-body); }
@@ -464,6 +493,7 @@
 .venue-vote-stat b { font-size: var(--text-caption); }
 .venue-vote-stat span,
 .venue-vote-stat em { margin-top: 2px; color: var(--color-text-muted); font-size: var(--text-label); font-style: normal; }
+.venue-vote-stat small { display: block; margin-top: 2px; color: var(--color-success); font-size: 10px; }
 .venue-vote-hint,
 .venue-compare,
 .lock-cost { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; color: var(--color-text-muted); font-size: var(--text-label); }
@@ -531,12 +561,15 @@
 .post-success p { margin: 0; color: rgb(255 251 226 / 75%); font-size: var(--text-caption); }
 .post-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 10px; }
 .review-card,
+.participant-feedback-card,
 .reconnect-card,
 .relationship-actions { border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface); padding: 14px; }
 .review-card > span,
+.participant-feedback-card > span,
 .reconnect-card > span,
 .relationship-actions > div > span { color: var(--color-success); font-size: var(--text-label); font-weight: 900; }
 .review-card h3,
+.participant-feedback-card h3,
 .reconnect-card h3,
 .relationship-actions h3 { margin: 5px 0 10px; font-size: var(--text-body); }
 .rating-row { display: flex; gap: 4px; }
@@ -544,6 +577,18 @@
 .rating-row button.active { color: var(--color-yellow); }
 .review-tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 9px 0; }
 .review-card small { color: var(--color-text-muted); font-size: var(--text-label); line-height: 1.5; }
+.participant-feedback-card > small { display: block; margin-top: 8px; color: var(--color-text-muted); font-size: var(--text-label); line-height: 1.5; }
+.participant-feedback-list { display: grid; gap: 6px; }
+.participant-feedback-list article { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 7px; border-radius: 10px; background: var(--color-surface-soft); padding: 7px; }
+.participant-feedback-list article > i { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--color-mint); font-size: var(--text-label); font-style: normal; font-weight: 900; }
+.participant-feedback-list article > div:nth-child(2) b,
+.participant-feedback-list article > div:nth-child(2) small { display: block; }
+.participant-feedback-list article > div:nth-child(2) b { font-size: var(--text-caption); }
+.participant-feedback-list article > div:nth-child(2) small { color: var(--color-text-muted); font-size: var(--text-label); }
+.participant-feedback-list article > div:last-child { display: flex; gap: 4px; }
+.participant-feedback-list button { display: inline-flex; align-items: center; gap: 4px; min-height: 30px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-text-muted); padding: 5px 7px; font-size: var(--text-label); font-weight: 800; }
+.participant-feedback-list button.like.selected { border-color: var(--color-lime); background: var(--color-mint); color: var(--color-deep); }
+.participant-feedback-list button.dislike.selected { border-color: var(--color-danger); background: var(--color-danger-soft); color: var(--color-danger); }
 .reconnect-people { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
 .reconnect-people button { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 7px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-soft); color: var(--color-deep); padding: 7px; text-align: left; }
 .reconnect-people button.selected { border-color: var(--color-lime); background: var(--color-mint); }
