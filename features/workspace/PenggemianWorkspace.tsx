@@ -14,6 +14,7 @@ import MbtiTest from "@/components/MbtiTest";
 import ProfileCenter, { ProfileDestination } from "@/components/ProfileCenter";
 import FriendCodePanel from "@/components/FriendCodePanel";
 import AccountCenter from "@/components/AccountCenter";
+import P0MathModelingPanel from "@/components/P0MathModelingPanel";
 import InvitationMatch from "@/components/InvitationMatch";
 import ActivityRoom from "@/components/ActivityRoom";
 import PostActivity from "@/components/PostActivity";
@@ -66,7 +67,12 @@ const studyProofOptions = [
   {id:"assessment",label:"完成岗位微测验",note:"8 分钟情境题，不以绝对分数公开排名"},
 ];
 
-const defaultActivityTime = "2026-08-22T15:00";
+const defaultActivityTime = () => {
+  const date = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+  date.setHours(19, 0, 0, 0);
+  const offset = date.getTimezoneOffset() * 60 * 1000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+};
 const AI_SERVICE_FEE = 8;
 const defaultOnlinePreferences: OnlinePreferences = {
   rank:"铂金",
@@ -221,7 +227,7 @@ export default function PenggemianWorkspace() {
   const [answer, setAnswer] = useState("提前4小时可取消");
   const [category, setCategory] = useState("推荐");
   const [scene, setScene] = useState<Scene>("offline");
-  const [studyRole, setStudyRole] = useState("Python 编程");
+  const [studyRole, setStudyRole] = useState("建模求解");
   const [studyProofs, setStudyProofs] = useState<string[]>(["portfolio", "assessment"]);
   const [weeklyHours, setWeeklyHours] = useState(8);
   const [partner, setPartner] = useState("学生社团");
@@ -667,9 +673,9 @@ export default function PenggemianWorkspace() {
                   <SafetyControls value={audienceMode} onChange={setAudienceMode} onNotify={notify}/>
                   {activeScene === "offline" ? <div className="fee-choice fee-explainer"><div><b>费用会在选定场地后锁定</b><p>场馆卡会分别展示人均场地费、是否含器材；碰个面服务费固定为 ¥{AI_SERVICE_FEE}/人，并单独列明。</p></div><span>费用明细公开透明</span></div> : <div className="fee-choice fee-explainer"><div><b>{activeScene === "online" ? "房间与组队规则" : "协作成本与交付规则"}</b><p>{activeScene === "online" ? "默认免费创建临时房间；游戏 ID、房间码和语音链接只对确认成员可见。" : "默认免费共学；资料、报名或工具费用必须在邀请前单独说明。"}</p></div><span>费用提前说明</span></div>}
                   <div className="question"><b>活动规则设定</b><p>活动约定</p><div>{["提前4小时可取消","各自AA","较强时间观念，不拖延"].map(x=><button key={x} className={answer===x?"selected":""} onClick={()=>setAnswer(x)}>{x}</button>)}</div></div>
-                  <button className="wide-button" onClick={()=>{if(activeScene === "study" && !studyGateReady){notify("竞赛 / 共学项目需先提交至少一项能力材料，并承诺每周 6 小时投入");return}setSelectedVenueId("");setStep(3)}}>{activeScene === "online" ? "按线上偏好计算匹配度并发送邀请" : activeScene === "study" ? "按能力与目标计算匹配度并发送邀请" : "按时间、地点与标签计算匹配度并发送邀请"} <span>不会直接成局 →</span></button>
+                  <button className="wide-button" onClick={()=>{if(activeScene === "study" && !studyGateReady){notify("竞赛 / 共学项目需先提交至少一项能力材料，并承诺每周 6 小时投入");return}setSelectedVenueId("");setStep(3)}}>{activeScene === "online" ? "按线上偏好计算匹配度并发送邀请" : activity === "数学建模竞赛组队" ? "进入真实发布与数据库匹配" : activeScene === "study" ? "按能力与目标计算匹配度并发送邀请" : "按时间、地点与标签计算匹配度并发送邀请"} <span>{activity === "数学建模竞赛组队" ? "PostgreSQL →" : "不会直接成局 →"}</span></button>
                 </div>}
-                {step===3&&<InvitationMatch key={`${activity}-${time}-${seats}-${audienceMode}-${JSON.stringify(onlinePreferences)}`} matchPlan={matchPlan} scene={activeScene} activity={activity} time={displayTime} seats={seats} level={level} userLocation={userLocation} venues={venueOptions} selectedVenueId={selectedVenueId} aiServiceFee={AI_SERVICE_FEE} onlinePreferences={onlinePreferences} onSelectVenue={setSelectedVenueId} onFormActivity={completeBooking} onNotify={notify}/>}
+                {step===3 && activity === "数学建模竞赛组队" ? <P0MathModelingPanel startsAtValue={time} weeklyHours={weeklyHours} onBack={()=>setStep(2)} onNotify={notify}/> : step===3&&<InvitationMatch key={`${activity}-${time}-${seats}-${audienceMode}-${JSON.stringify(onlinePreferences)}`} matchPlan={matchPlan} scene={activeScene} activity={activity} time={displayTime} seats={seats} level={level} userLocation={userLocation} venues={venueOptions} selectedVenueId={selectedVenueId} aiServiceFee={AI_SERVICE_FEE} onlinePreferences={onlinePreferences} onSelectVenue={setSelectedVenueId} onFormActivity={completeBooking} onNotify={notify}/>}
                 {step===4&&<ActivityRoom activity={activity} scene={activeScene} time={displayTime} seats={seats} aiServiceFee={AI_SERVICE_FEE} onlinePreferences={onlinePreferences} selectedVenue={activeScene === "offline" ? selectedVenue : undefined} venues={venueOptions} participants={roomParticipants.length ? roomParticipants : matchPlan.selected} onSelectVenue={setSelectedVenueId} onAddMobileCalendar={addMobileCalendar} onEndActivity={finishActivity} onNotify={notify}/>}
               </div>
             </div>

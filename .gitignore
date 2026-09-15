@@ -37,6 +37,7 @@ yarn-error.log*
 
 /dist/
 /dist-edgeone/
+/dist-server/
 *.tsbuildinfo
 /.wrangler/
 /outputs/

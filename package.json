@@ -11,13 +11,25 @@
     "build:edgeone": "vite build --config vite.edgeone.config.ts",
     "start": "vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test:server": "node --import tsx --test server/test/*.test.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "server:dev": "tsx watch server/src/index.ts",
+    "server:build": "tsc -p tsconfig.server.json",
+    "server:start": "node dist-server/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx server/src/db/migrate.ts",
+    "db:seed": "tsx server/src/db/seed.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "dotenv": "^17.4.2",
     "drizzle-orm": "0.45.2",
+    "hono": "^4.13.7",
+    "jose": "^6.2.12",
+    "postgres": "^3.4.9",
     "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react-dom": "19.2.6",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
@@ -37,6 +49,7 @@
     "globals": "16.4.0",
     "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",
+    "tsx": "^4.23.13",
     "typescript": "5.9.3",
     "typescript-eslint": "8.59.3",
     "vinext": "1.0.0-beta.2",
