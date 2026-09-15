@@ -12,13 +12,15 @@
     "start": "vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "test:server": "node --import tsx --test server/test/*.test.ts",
+    "test:b1-schema": "node --import tsx --test tests/b1-schema.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "server:dev": "tsx watch server/src/index.ts",
     "server:build": "tsc -p tsconfig.server.json",
     "server:start": "node dist-server/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx server/src/db/migrate.ts",
-    "db:seed": "tsx server/src/db/seed.ts"
+    "db:seed": "tsx server/src/db/seed.ts",
+    "job:expire-invitations": "tsx server/src/jobs/expire-invitations.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

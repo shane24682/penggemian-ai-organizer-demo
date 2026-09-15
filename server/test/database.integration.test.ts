@@ -3,7 +3,7 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import test, { after } from "node:test";
 
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, inArray, or } from "drizzle-orm";
 
 import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
@@ -12,8 +12,14 @@ import {
   requestRoleSlots,
   requests,
   schools,
+  domainEvents,
+  invitations,
   matchCandidates,
   matchRuns,
+  notificationOutbox,
+  sessionMembers,
+  sessions,
+  statusEvents,
   userAvailability,
   userCapabilities,
   users,
@@ -44,6 +50,30 @@ const login = async (phoneE164: string) => {
   assert.equal(response.status, 200);
   const payload = (await response.json()) as { data: { accessToken: string } };
   return payload.data.accessToken;
+};
+
+const cleanupRequestFormation = async (requestId: string) => {
+  const sessionRows = await connection.db.select({ id: sessions.id }).from(sessions).where(eq(sessions.requestId, requestId));
+  const sessionIds = sessionRows.map(({ id }) => id);
+  const invitationRows = await connection.db
+    .select({ id: invitations.id })
+    .from(invitations)
+    .where(eq(invitations.requestId, requestId));
+  const invitationIds = invitationRows.map(({ id }) => id);
+
+  if (invitationIds.length) {
+    await connection.db.delete(notificationOutbox).where(inArray(notificationOutbox.aggregateId, invitationIds));
+  }
+  await connection.db.delete(domainEvents).where(eq(domainEvents.requestId, requestId));
+  const aggregateIds = [requestId, ...sessionIds, ...invitationIds];
+  await connection.db.delete(statusEvents).where(inArray(statusEvents.aggregateId, aggregateIds));
+  await connection.db.delete(invitations).where(eq(invitations.requestId, requestId));
+  if (sessionIds.length) {
+    await connection.db.delete(sessionMembers).where(inArray(sessionMembers.sessionId, sessionIds));
+    await connection.db.delete(sessions).where(inArray(sessions.id, sessionIds));
+  }
+  await connection.db.delete(matchRuns).where(eq(matchRuns.requestId, requestId));
+  await connection.db.update(requests).set({ status: "OPEN", updatedAt: new Date() }).where(eq(requests.id, requestId));
 };
 
 test("seed creates the fixed school, users, availability, capabilities and request", async () => {
@@ -153,7 +183,7 @@ test("request validation rejects a participant count that does not match role sl
 test("matching reads seeded users and persists a reloadable current run", async () => {
   const requestId = "30000000-0000-4000-8000-000000000001";
   const tokenA = await login("+8613800000001");
-  await connection.db.delete(matchRuns).where(eq(matchRuns.requestId, requestId));
+  await cleanupRequestFormation(requestId);
 
   try {
     const matchResponse = await app.request(`/api/v1/requests/${requestId}/match`, {
@@ -189,6 +219,119 @@ test("matching reads seeded users and persists a reloadable current run", async 
       .limit(1);
     assert.ok(storedCandidate.id);
   } finally {
-    await connection.db.delete(matchRuns).where(eq(matchRuns.requestId, requestId));
+    await cleanupRequestFormation(requestId);
+  }
+});
+
+test("real invitations decline, promote a backup, accept, and confirm one session", async () => {
+  const requestId = "30000000-0000-4000-8000-000000000001";
+  const [tokenA, tokenB, tokenC, tokenD] = await Promise.all([
+    login("+8613800000001"),
+    login("+8613800000002"),
+    login("+8613800000003"),
+    login("+8613800000004"),
+  ]);
+  await cleanupRequestFormation(requestId);
+
+  try {
+    const matchResponse = await app.request(`/api/v1/requests/${requestId}/match`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(matchResponse.status, 200);
+    const matchPayload = (await matchResponse.json()) as {
+      data: { sessionId: string; invitationCount: number };
+    };
+    assert.ok(matchPayload.data.sessionId);
+    assert.equal(matchPayload.data.invitationCount, 3);
+
+    const loadInvitations = async (token: string) => {
+      const response = await app.request("/api/v1/me/invitations", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      assert.equal(response.status, 200);
+      return (await response.json()) as {
+        data: Array<{ id: string; status: string; candidateType: string; roleSlotId: string }>;
+      };
+    };
+    const [listB, listC, listD] = await Promise.all([
+      loadInvitations(tokenB),
+      loadInvitations(tokenC),
+      loadInvitations(tokenD),
+    ]);
+    assert.equal(listB.data[0].status, "PENDING");
+    assert.equal(listC.data[0].status, "PENDING");
+    assert.equal(listD.data[0].status, "QUEUED");
+
+    const hiddenResponse = await app.request(`/api/v1/invitations/${listB.data[0].id}`, {
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(hiddenResponse.status, 404);
+
+    const declineResponse = await app.request(`/api/v1/invitations/${listB.data[0].id}/respond`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenB}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "DECLINE" }),
+    });
+    assert.equal(declineResponse.status, 200);
+    const declinePayload = (await declineResponse.json()) as { data: { promotedInvitationId: string } };
+    assert.equal(declinePayload.data.promotedInvitationId, listD.data[0].id);
+    assert.equal((await loadInvitations(tokenD)).data[0].status, "PENDING");
+
+    for (const [invitationId, token] of [
+      [listC.data[0].id, tokenC],
+      [listD.data[0].id, tokenD],
+    ] as const) {
+      const response = await app.request(`/api/v1/invitations/${invitationId}/respond`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "ACCEPT" }),
+      });
+      assert.equal(response.status, 200);
+    }
+
+    const repeatedAccept = await app.request(`/api/v1/invitations/${listD.data[0].id}/respond`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenD}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "ACCEPT" }),
+    });
+    assert.equal(repeatedAccept.status, 200);
+
+    const sessionResponse = await app.request(`/api/v1/sessions/${matchPayload.data.sessionId}`, {
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(sessionResponse.status, 200);
+    const sessionPayload = (await sessionResponse.json()) as {
+      data: { status: string; members: Array<{ userId: string }> };
+    };
+    assert.equal(sessionPayload.data.status, "CONFIRMED");
+    assert.equal(sessionPayload.data.members.length, 3);
+
+    const declinedUserSession = await app.request(`/api/v1/sessions/${matchPayload.data.sessionId}`, {
+      headers: { Authorization: `Bearer ${tokenB}` },
+    });
+    assert.equal(declinedUserSession.status, 404);
+
+    const [sessionCount] = await connection.db.select({ value: count() }).from(sessions).where(eq(sessions.requestId, requestId));
+    const [memberCount] = await connection.db
+      .select({ value: count() })
+      .from(sessionMembers)
+      .where(eq(sessionMembers.sessionId, matchPayload.data.sessionId));
+    const eventRows = await connection.db
+      .select({ eventType: statusEvents.eventType })
+      .from(statusEvents)
+      .where(
+        or(
+          eq(statusEvents.aggregateId, requestId),
+          eq(statusEvents.aggregateId, matchPayload.data.sessionId),
+          inArray(statusEvents.aggregateId, [listB.data[0].id, listC.data[0].id, listD.data[0].id]),
+        ),
+      );
+    assert.equal(sessionCount.value, 1);
+    assert.equal(memberCount.value, 3);
+    assert.ok(eventRows.some(({ eventType }) => eventType === "BACKUP_PROMOTED"));
+    assert.ok(eventRows.some(({ eventType }) => eventType === "SESSION_CONFIRMED"));
+  } finally {
+    await cleanupRequestFormation(requestId);
   }
 });

@@ -26,3 +26,37 @@ export const matchCandidateStatusEnum = pgEnum("match_candidate_status", [
   "EXPIRED",
   "SKIPPED",
 ]);
+
+export const sessionStatusEnum = pgEnum("session_status", [
+  "FORMING",
+  "CONFIRMED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+]);
+export const sessionMemberTypeEnum = pgEnum("session_member_type", ["HOST", "PARTICIPANT"]);
+export const sessionMemberStatusEnum = pgEnum("session_member_status", [
+  "CONFIRMED",
+  "WITHDRAWN",
+  "COMPLETED",
+  "NO_SHOW",
+]);
+export const invitationStatusEnum = pgEnum("invitation_status", [
+  "QUEUED",
+  "PENDING",
+  "ACCEPTED",
+  "DECLINED",
+  "EXPIRED",
+  "CANCELLED",
+]);
+export const checkinStatusEnum = pgEnum("checkin_status", ["PRESENT", "LATE", "ABSENT"]);
+export const checkinMethodEnum = pgEnum("checkin_method", ["SELF_CONFIRM"]);
+export const regroupIntentStatusEnum = pgEnum("regroup_intent_status", ["OPEN", "MATCHED", "CLOSED"]);
+export const notificationChannelEnum = pgEnum("notification_channel", ["IN_APP"]);
+export const notificationStatusEnum = pgEnum("notification_status", [
+  "QUEUED",
+  "PROCESSING",
+  "SENT",
+  "FAILED",
+  "DEAD",
+]);

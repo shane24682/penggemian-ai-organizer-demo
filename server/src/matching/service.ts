@@ -1,4 +1,6 @@
-import { and, eq, ne } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 
 import type { Database } from "../db/client.js";
 import {
@@ -6,12 +8,16 @@ import {
   matchRuns,
   requestRoleSlots,
   requests,
+  sessionMembers,
+  sessions,
+  statusEvents,
   userAvailability,
   userCapabilities,
   userProfiles,
   users,
 } from "../db/schema/index.js";
 import { ApiError } from "../http/errors.js";
+import { dispatchMatchInvitations } from "../invitations/service.js";
 import {
   ALGORITHM_VERSION,
   CONTRACT_VERSION,
@@ -37,6 +43,8 @@ export type MatchingExecution = {
   algorithmVersion: string;
   readyForInvitationDispatch: boolean;
   unfilledRoleSlotIds: string[];
+  sessionId: string | null;
+  invitationCount: number;
   candidates: PlannedCandidate[];
 };
 
@@ -108,21 +116,13 @@ export const executeMatching = async (db: Database, requestId: string): Promise<
     .where(eq(requestRoleSlots.requestId, requestId));
   if (!roleRows.length) throw new ApiError(422, "ROLE_SLOTS_REQUIRED", "需求没有角色空位");
 
-  const [run] = await db
-    .insert(matchRuns)
-    .values({
-      requestId,
-      contractVersion: CONTRACT_VERSION,
-      algorithmVersion: ALGORITHM_VERSION,
-      parametersJson: {
-        primaryThreshold: 60,
-        backupThreshold: 50,
-        backupLimitPerSlot: 5,
-        weights: { role: 35, time: 25, goal: 20, commitment: 10, trust: 10 },
-      },
-    })
-    .returning({ id: matchRuns.id });
-
+  const runId = randomUUID();
+  const parameters = {
+    primaryThreshold: 60,
+    backupThreshold: 50,
+    backupLimitPerSlot: 5,
+    weights: { role: 35, time: 25, goal: 20, commitment: 10, trust: 10 },
+  };
   try {
     const request: MatchingRequest = {
       creatorUserId: requestRow.creatorUserId,
@@ -132,7 +132,19 @@ export const executeMatching = async (db: Database, requestId: string): Promise<
       endsAt: requestRow.endsAt,
       weeklyHoursRequired: requestRow.weeklyHoursRequired,
     };
-    const pool = await loadCandidates(db, request);
+    const confirmedParticipants = await db
+      .select({ userId: sessionMembers.userId, roleSlotId: sessionMembers.roleSlotId })
+      .from(sessionMembers)
+      .innerJoin(sessions, eq(sessions.id, sessionMembers.sessionId))
+      .where(
+        and(
+          eq(sessions.requestId, requestId),
+          eq(sessionMembers.memberType, "PARTICIPANT"),
+          inArray(sessionMembers.memberStatus, ["CONFIRMED", "COMPLETED"]),
+        ),
+      );
+    const confirmedUserIds = new Set(confirmedParticipants.map(({ userId }) => userId));
+    const pool = (await loadCandidates(db, request)).filter(({ userId }) => !confirmedUserIds.has(userId));
     const planned: PlannedCandidate[] = [];
     const assignedUserIds = new Set<string>();
     const unfilledRoleSlotIds: string[] = [];
@@ -143,6 +155,9 @@ export const executeMatching = async (db: Database, requestId: string): Promise<
     });
 
     for (const slotRow of orderedSlots) {
+      const occupiedCount = confirmedParticipants.filter(({ roleSlotId }) => roleSlotId === slotRow.id).length;
+      const requiredCount = Math.max(0, slotRow.slotCount - occupiedCount);
+      if (requiredCount === 0) continue;
       const slot: MatchingRoleSlot = {
         id: slotRow.id,
         roleCode: slotRow.roleCode as CapabilityRole,
@@ -152,8 +167,8 @@ export const executeMatching = async (db: Database, requestId: string): Promise<
       const ranked = rankCandidates(request, slot, pool).filter(
         (candidate) => !assignedUserIds.has(candidate.userId),
       );
-      const primaries = ranked.filter((candidate) => candidate.score >= 60).slice(0, slotRow.slotCount);
-      if (primaries.length < slotRow.slotCount) {
+      const primaries = ranked.filter((candidate) => candidate.score >= 60).slice(0, requiredCount);
+      if (primaries.length < requiredCount) {
         unfilledRoleSlotIds.push(slot.id);
       }
       primaries.forEach((candidate, index) => {
@@ -169,30 +184,72 @@ export const executeMatching = async (db: Database, requestId: string): Promise<
         assignedUserIds.add(candidate.userId);
         planned.push({
           roleSlotId: slot.id,
-          rank: slotRow.slotCount + index + 1,
+          rank: requiredCount + index + 1,
           candidateType: "BACKUP",
           candidate,
         });
       });
     }
 
-    await db.transaction(async (tx) => {
-      await tx.update(matchRuns).set({ isCurrent: false }).where(eq(matchRuns.requestId, requestId));
-      if (planned.length) {
-        await tx.insert(matchCandidates).values(
-          planned.map((item) => ({
-            matchRunId: run.id,
-            requestId,
-            userId: item.candidate.userId,
-            roleSlotId: item.roleSlotId,
-            rank: item.rank,
-            candidateType: item.candidateType,
-            score: item.candidate.score.toFixed(2),
-            breakdownJson: item.candidate.breakdown,
-            reasonsJson: item.candidate.reasons,
-          })),
-        );
+    const now = new Date();
+    const dispatch = await db.transaction(async (tx) => {
+      await tx.execute(sql`select id from requests where id = ${requestId} for update`);
+      const [lockedRequest] = await tx.select({ status: requests.status }).from(requests).where(eq(requests.id, requestId));
+      if (!lockedRequest || !["OPEN", "MATCHING"].includes(lockedRequest.status)) {
+        throw new ApiError(409, "REQUEST_NOT_MATCHABLE", "当前需求状态不能重新匹配");
       }
+      if (lockedRequest.status !== "MATCHING") {
+        await tx.update(requests).set({ status: "MATCHING", updatedAt: now }).where(eq(requests.id, requestId));
+        await tx.insert(statusEvents).values({
+          aggregateType: "REQUEST",
+          aggregateId: requestId,
+          eventType: "MATCHING_STARTED",
+          actorUserId: requestRow.creatorUserId,
+          fromStatus: lockedRequest.status,
+          toStatus: "MATCHING",
+          idempotencyKey: `match-run:${runId}:started`,
+        });
+      }
+      await tx.insert(matchRuns).values({
+        id: runId,
+        requestId,
+        contractVersion: CONTRACT_VERSION,
+        algorithmVersion: ALGORITHM_VERSION,
+        parametersJson: parameters,
+      });
+      await tx.update(matchRuns).set({ isCurrent: false }).where(eq(matchRuns.requestId, requestId));
+      let persistedCandidates: Array<{
+        id: string;
+        userId: string;
+        roleSlotId: string;
+        rank: number;
+        candidateType: "PRIMARY" | "BACKUP";
+      }> = [];
+      if (planned.length) {
+        persistedCandidates = await tx
+          .insert(matchCandidates)
+          .values(
+            planned.map((item) => ({
+              matchRunId: runId,
+              requestId,
+              userId: item.candidate.userId,
+              roleSlotId: item.roleSlotId,
+              rank: item.rank,
+              candidateType: item.candidateType,
+              score: item.candidate.score.toFixed(2),
+              breakdownJson: item.candidate.breakdown,
+              reasonsJson: item.candidate.reasons,
+            })),
+          )
+          .returning({
+            id: matchCandidates.id,
+            userId: matchCandidates.userId,
+            roleSlotId: matchCandidates.roleSlotId,
+            rank: matchCandidates.rank,
+            candidateType: matchCandidates.candidateType,
+          });
+      }
+      const invitationDispatch = await dispatchMatchInvitations(tx, requestRow, persistedCandidates, now);
       await tx
         .update(matchRuns)
         .set({
@@ -201,28 +258,34 @@ export const executeMatching = async (db: Database, requestId: string): Promise<
           isCurrent: true,
           finishedAt: new Date(),
         })
-        .where(eq(matchRuns.id, run.id));
+        .where(eq(matchRuns.id, runId));
+      return invitationDispatch;
     });
 
     return {
-      runId: run.id,
+      runId,
       requestId,
       contractVersion: CONTRACT_VERSION,
       algorithmVersion: ALGORITHM_VERSION,
       readyForInvitationDispatch: unfilledRoleSlotIds.length === 0,
       unfilledRoleSlotIds,
+      sessionId: dispatch.sessionId,
+      invitationCount: dispatch.invitationCount,
       candidates: planned,
     };
   } catch (error) {
-    await db
-      .update(matchRuns)
-      .set({
+    await db.insert(matchRuns).values({
+        id: runId,
+        requestId,
+        contractVersion: CONTRACT_VERSION,
+        algorithmVersion: ALGORITHM_VERSION,
+        parametersJson: parameters,
+        candidateCount: 0,
         status: "FAILED",
         errorCode: error instanceof ApiError ? error.code : "MATCHING_FAILED",
         errorDetail: error instanceof Error ? error.message : "Unknown matching error",
         finishedAt: new Date(),
-      })
-      .where(eq(matchRuns.id, run.id));
+      }).onConflictDoNothing();
     throw error;
   }
 };

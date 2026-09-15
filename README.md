@@ -12,6 +12,7 @@
 - 桌面端和移动端响应式布局
 - P0 手机号密码注册/登录、个人资料、可用时间和竞赛能力 API
 - P0 数学建模需求发布、数据库候选筛选、可解释排序和匹配结果持久化
+- P0 真实邀请、接受/拒绝/超时、候补递补、满员成局和成员状态查询
 
 ## 本地运行
 
@@ -46,6 +47,17 @@ npm run build:edgeone
 ```
 
 `test:server` 包含 PostgreSQL 集成测试，运行前需先完成迁移和种子数据。
+
+部署环境每分钟调用一次以下任务，处理到期邀请并自动递补同角色候补：
+
+```bash
+npm run job:expire-invitations
+```
+
+B2 API 包括：`GET /api/v1/me/invitations`、
+`GET /api/v1/invitations/:invitationId`、
+`POST /api/v1/invitations/:invitationId/respond`、
+`GET /api/v1/me/sessions` 和 `GET /api/v1/sessions/:sessionId`。
 
 ## 交接说明
 
