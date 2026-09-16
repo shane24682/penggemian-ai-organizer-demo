@@ -10,6 +10,7 @@ import type { AppEnv } from "./http/types.js";
 import { createAuthRoutes } from "./routes/auth.js";
 import { createInvitationRoutes } from "./routes/invitations.js";
 import { createMatchingRoutes } from "./routes/matching.js";
+import { createOpsRoutes } from "./routes/ops.js";
 import { createProfileRoutes } from "./routes/profile.js";
 import { createRequestRoutes } from "./routes/requests.js";
 
@@ -40,6 +41,7 @@ export const createApp = (config: AppConfig, connection: DatabaseConnection) => 
   app.route("/api/v1", createRequestRoutes(config, connection.db));
   app.route("/api/v1", createMatchingRoutes(connection.db));
   app.route("/api/v1", createInvitationRoutes(connection.db));
+  app.route("/api/v1", createOpsRoutes(connection.db));
 
   app.notFound((context) =>
     context.json(

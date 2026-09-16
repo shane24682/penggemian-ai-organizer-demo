@@ -9,6 +9,8 @@ import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { createDatabase } from "../src/db/client.js";
 import {
+  checkins,
+  costItems,
   requestRoleSlots,
   requests,
   schools,
@@ -17,6 +19,7 @@ import {
   matchCandidates,
   matchRuns,
   notificationOutbox,
+  opsWorkLogs,
   sessionMembers,
   sessions,
   statusEvents,
@@ -223,6 +226,137 @@ test("matching reads seeded users and persists a reloadable current run", async 
   }
 });
 
+test("matching excludes a candidate who already has an overlapping confirmed session", async () => {
+  const requestId = "30000000-0000-4000-8000-000000000001";
+  const tokenA = await login("+8613800000001");
+  const [seededRequest] = await connection.db.select().from(requests).where(eq(requests.id, requestId));
+  assert.ok(seededRequest);
+  const [blockingRequest] = await connection.db
+    .insert(requests)
+    .values({
+      schoolId: seededRequest.schoolId,
+      creatorUserId: seededRequest.creatorUserId,
+      competitionName: "时间冲突测试",
+      title: "B 已确认参加的重叠项目",
+      startsAt: seededRequest.startsAt,
+      endsAt: seededRequest.endsAt,
+      weeklyHoursRequired: 1,
+      participantLimit: 2,
+      applicationDeadline: seededRequest.applicationDeadline,
+      dataScope: "TEST",
+    })
+    .returning();
+  const [blockingSlot] = await connection.db
+    .insert(requestRoleSlots)
+    .values({ requestId: blockingRequest.id, roleCode: "CODING", slotCount: 1, minLevel: 1 })
+    .returning();
+  const [blockingSession] = await connection.db
+    .insert(sessions)
+    .values({
+      requestId: blockingRequest.id,
+      schoolId: blockingRequest.schoolId,
+      status: "CONFIRMED",
+      startsAt: blockingRequest.startsAt,
+      endsAt: blockingRequest.endsAt,
+    })
+    .returning();
+  await connection.db.insert(sessionMembers).values([
+    { sessionId: blockingSession.id, userId: seededRequest.creatorUserId, memberType: "HOST" },
+    {
+      sessionId: blockingSession.id,
+      userId: "20000000-0000-4000-8000-000000000002",
+      roleSlotId: blockingSlot.id,
+      memberType: "PARTICIPANT",
+    },
+  ]);
+  await cleanupRequestFormation(requestId);
+
+  try {
+    const response = await app.request(`/api/v1/requests/${requestId}/match`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(response.status, 200);
+    const payload = (await response.json()) as {
+      data: { readyForInvitationDispatch: boolean; candidates: Array<{ candidate: { userId: string } }> };
+    };
+    assert.equal(payload.data.readyForInvitationDispatch, true);
+    assert.equal(
+      payload.data.candidates.some(({ candidate }) => candidate.userId === "20000000-0000-4000-8000-000000000002"),
+      false,
+    );
+    assert.deepEqual(
+      new Set(payload.data.candidates.map(({ candidate }) => candidate.userId)),
+      new Set(["20000000-0000-4000-8000-000000000003", "20000000-0000-4000-8000-000000000004"]),
+    );
+  } finally {
+    await cleanupRequestFormation(requestId);
+    await cleanupRequestFormation(blockingRequest.id);
+    await connection.db.delete(requestRoleSlots).where(eq(requestRoleSlots.requestId, blockingRequest.id));
+    await connection.db.delete(requests).where(eq(requests.id, blockingRequest.id));
+  }
+});
+
+test("the creator can cancel an inviting request and its active lifecycle records", async () => {
+  const requestId = "30000000-0000-4000-8000-000000000001";
+  const [tokenA, tokenB] = await Promise.all([login("+8613800000001"), login("+8613800000002")]);
+  await cleanupRequestFormation(requestId);
+
+  try {
+    const matchResponse = await app.request(`/api/v1/requests/${requestId}/match`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(matchResponse.status, 200);
+
+    const hiddenCancel = await app.request(`/api/v1/requests/${requestId}/cancel`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenB}` },
+    });
+    assert.equal(hiddenCancel.status, 404);
+
+    const cancelResponse = await app.request(`/api/v1/requests/${requestId}/cancel`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(cancelResponse.status, 200);
+    const repeatedCancel = await app.request(`/api/v1/requests/${requestId}/cancel`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(repeatedCancel.status, 200);
+
+    const [storedRequest] = await connection.db.select().from(requests).where(eq(requests.id, requestId));
+    const [storedSession] = await connection.db.select().from(sessions).where(eq(sessions.requestId, requestId));
+    const storedInvitations = await connection.db.select().from(invitations).where(eq(invitations.requestId, requestId));
+    const cancellationEvents = await connection.db
+      .select({ eventType: statusEvents.eventType })
+      .from(statusEvents)
+      .where(inArray(statusEvents.aggregateId, [requestId, storedSession.id, ...storedInvitations.map(({ id }) => id)]));
+    const invitationNotifications = await connection.db
+      .select({ templateCode: notificationOutbox.templateCode, status: notificationOutbox.status })
+      .from(notificationOutbox)
+      .where(inArray(notificationOutbox.aggregateId, storedInvitations.map(({ id }) => id)));
+    assert.equal(storedRequest.status, "CANCELLED");
+    assert.equal(storedSession.status, "CANCELLED");
+    assert.ok(storedInvitations.every(({ status }) => status === "CANCELLED"));
+    assert.equal(cancellationEvents.filter(({ eventType }) => eventType === "REQUEST_CANCELLED").length, 1);
+    assert.ok(cancellationEvents.some(({ eventType }) => eventType === "SESSION_CANCELLED_WITH_REQUEST"));
+    assert.ok(
+      invitationNotifications
+        .filter(({ templateCode }) => templateCode === "TEAM_INVITATION_PENDING")
+        .every(({ status }) => status === "DEAD"),
+    );
+    assert.ok(
+      invitationNotifications.some(
+        ({ templateCode, status }) => templateCode === "TEAM_INVITATION_CANCELLED" && status === "QUEUED",
+      ),
+    );
+  } finally {
+    await cleanupRequestFormation(requestId);
+  }
+});
+
 test("real invitations decline, promote a backup, accept, and confirm one session", async () => {
   const requestId = "30000000-0000-4000-8000-000000000001";
   const [tokenA, tokenB, tokenC, tokenD] = await Promise.all([
@@ -333,5 +467,168 @@ test("real invitations decline, promote a backup, accept, and confirm one sessio
     assert.ok(eventRows.some(({ eventType }) => eventType === "SESSION_CONFIRMED"));
   } finally {
     await cleanupRequestFormation(requestId);
+  }
+});
+
+test("ops metrics use only REAL cohorts and return the four frozen calculations", async () => {
+  const schoolId = "10000000-0000-4000-8000-000000000001";
+  const userAId = "20000000-0000-4000-8000-000000000001";
+  const userBId = "20000000-0000-4000-8000-000000000002";
+  const now = new Date();
+  const from = new Date(now.getTime() - 60 * 60 * 1000);
+  const to = new Date(now.getTime() + 60 * 60 * 1000);
+  const startsAt = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
+  const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
+  const applicationDeadline = new Date(startsAt.getTime() - 24 * 60 * 60 * 1000);
+
+  await connection.db.update(users).set({ role: "OPS", updatedAt: now }).where(eq(users.id, userAId));
+  const tokenOps = await login("+8613800000001");
+  const tokenUser = await login("+8613800000002");
+  const [request] = await connection.db
+    .insert(requests)
+    .values({
+      schoolId,
+      creatorUserId: userAId,
+      competitionName: "指标测试竞赛",
+      title: "真实指标测试需求",
+      startsAt,
+      endsAt,
+      weeklyHoursRequired: 1,
+      participantLimit: 2,
+      applicationDeadline,
+      status: "FULFILLED",
+      sourceChannel: "DIRECT",
+      dataScope: "REAL",
+      createdAt: new Date(now.getTime() - 30 * 60 * 1000),
+    })
+    .returning();
+  const [slot] = await connection.db
+    .insert(requestRoleSlots)
+    .values({ requestId: request.id, roleCode: "CODING", slotCount: 1, minLevel: 1 })
+    .returning();
+  const [session] = await connection.db
+    .insert(sessions)
+    .values({
+      requestId: request.id,
+      schoolId,
+      status: "COMPLETED",
+      startsAt,
+      endsAt,
+    })
+    .returning();
+  await connection.db.insert(sessionMembers).values([
+    { sessionId: session.id, userId: userAId, memberType: "HOST", memberStatus: "COMPLETED" },
+    {
+      sessionId: session.id,
+      userId: userBId,
+      roleSlotId: slot.id,
+      memberType: "PARTICIPANT",
+      memberStatus: "COMPLETED",
+    },
+  ]);
+  await connection.db.insert(checkins).values([
+    { sessionId: session.id, userId: userAId, status: "PRESENT", checkedInAt: now },
+    { sessionId: session.id, userId: userBId, status: "LATE", checkedInAt: now },
+  ]);
+  await connection.db.insert(statusEvents).values([
+    {
+      aggregateType: "REQUEST",
+      aggregateId: request.id,
+      eventType: "REQUEST_FULFILLED",
+      fromStatus: "INVITING",
+      toStatus: "FULFILLED",
+      createdAt: now,
+    },
+    {
+      aggregateType: "SESSION",
+      aggregateId: session.id,
+      eventType: "SESSION_CONFIRMED",
+      fromStatus: "FORMING",
+      toStatus: "CONFIRMED",
+      createdAt: now,
+    },
+    {
+      aggregateType: "SESSION",
+      aggregateId: session.id,
+      eventType: "SESSION_COMPLETED",
+      fromStatus: "IN_PROGRESS",
+      toStatus: "COMPLETED",
+      createdAt: now,
+    },
+  ]);
+  await connection.db.insert(costItems).values({
+    schoolId,
+    requestId: request.id,
+    sessionId: session.id,
+    costType: "VENUE",
+    amountCents: 300,
+    incurredAt: now,
+  });
+  await connection.db.insert(opsWorkLogs).values({
+    opsUserId: userAId,
+    requestId: request.id,
+    sessionId: session.id,
+    actionType: "FOLLOW_UP",
+    minutesSpent: 2,
+  });
+  const [regroupRequest] = await connection.db
+    .insert(requests)
+    .values({
+      schoolId,
+      creatorUserId: userAId,
+      competitionName: "指标测试竞赛",
+      title: "七日内复组需求",
+      startsAt: new Date(startsAt.getTime() + 14 * 24 * 60 * 60 * 1000),
+      endsAt: new Date(endsAt.getTime() + 14 * 24 * 60 * 60 * 1000),
+      weeklyHoursRequired: 1,
+      participantLimit: 2,
+      applicationDeadline: new Date(applicationDeadline.getTime() + 14 * 24 * 60 * 60 * 1000),
+      sourceSessionId: session.id,
+      sourceChannel: "DIRECT",
+      dataScope: "REAL",
+      createdAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+    })
+    .returning();
+
+  try {
+    const forbidden = await app.request(
+      `/api/v1/ops/metrics?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`,
+      { headers: { Authorization: `Bearer ${tokenUser}` } },
+    );
+    assert.equal(forbidden.status, 403);
+
+    const response = await app.request(
+      `/api/v1/ops/metrics?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}&sourceChannel=DIRECT`,
+      { headers: { Authorization: `Bearer ${tokenOps}` } },
+    );
+    assert.equal(response.status, 200);
+    const payload = (await response.json()) as {
+      data: {
+        filters: { dataScope: string; sourceChannel: string };
+        formationRate: { numerator: number; denominator: number; rate: number };
+        attendanceRate: { numerator: number; denominator: number; rate: number };
+        regroupRate: { numerator: number; denominator: number; rate: number };
+        unitCost: { totalAmountCents: number; completedSessions: number; amountCentsPerCompletedSession: number };
+      };
+    };
+    assert.equal(payload.data.filters.dataScope, "REAL");
+    assert.equal(payload.data.filters.sourceChannel, "DIRECT");
+    assert.deepEqual(payload.data.formationRate, { numerator: 1, denominator: 1, rate: 1 });
+    assert.deepEqual(payload.data.attendanceRate, { numerator: 2, denominator: 2, rate: 1 });
+    assert.deepEqual(payload.data.regroupRate, { numerator: 1, denominator: 1, rate: 1 });
+    assert.equal(payload.data.unitCost.totalAmountCents, 500);
+    assert.equal(payload.data.unitCost.completedSessions, 1);
+    assert.equal(payload.data.unitCost.amountCentsPerCompletedSession, 500);
+  } finally {
+    await connection.db.delete(costItems).where(eq(costItems.sessionId, session.id));
+    await connection.db.delete(opsWorkLogs).where(eq(opsWorkLogs.sessionId, session.id));
+    await connection.db.delete(checkins).where(eq(checkins.sessionId, session.id));
+    await connection.db.delete(statusEvents).where(inArray(statusEvents.aggregateId, [request.id, session.id]));
+    await connection.db.delete(sessionMembers).where(eq(sessionMembers.sessionId, session.id));
+    await connection.db.delete(requests).where(eq(requests.id, regroupRequest.id));
+    await connection.db.delete(sessions).where(eq(sessions.id, session.id));
+    await connection.db.delete(requestRoleSlots).where(eq(requestRoleSlots.requestId, request.id));
+    await connection.db.delete(requests).where(eq(requests.id, request.id));
+    await connection.db.update(users).set({ role: "USER", updatedAt: new Date() }).where(eq(users.id, userAId));
   }
 });

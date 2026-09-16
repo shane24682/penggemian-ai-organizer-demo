@@ -9,6 +9,7 @@ import { ApiError } from "../http/errors.js";
 import { success } from "../http/responses.js";
 import type { AppEnv } from "../http/types.js";
 import { parseJson } from "../http/validation.js";
+import { cancelRequest } from "../requests/service.js";
 
 const roleSlotSchema = z.object({
   roleCode: z.enum(["MODELING", "CODING", "WRITING", "OPEN"]),
@@ -114,6 +115,15 @@ export const createRequestRoutes = (config: AppConfig, db: Database) => {
     }
     const slots = await db.select().from(requestRoleSlots).where(eq(requestRoleSlots.requestId, request.id));
     return success(context, { ...request, roleSlots: slots });
+  });
+
+  routes.post("/requests/:requestId/cancel", async (context) => {
+    const auth = context.get("auth");
+    const requestId = context.req.param("requestId");
+    if (!z.string().uuid().safeParse(requestId).success) {
+      throw new ApiError(400, "INVALID_REQUEST_ID", "需求编号格式错误");
+    }
+    return success(context, await cancelRequest(db, requestId, auth.userId));
   });
 
   return routes;
