@@ -60,3 +60,8 @@ export const notificationStatusEnum = pgEnum("notification_status", [
   "FAILED",
   "DEAD",
 ]);
+export const deliveryAttemptStatusEnum = pgEnum("delivery_attempt_status", [
+  "PROCESSING",
+  "SUCCEEDED",
+  "FAILED",
+]);

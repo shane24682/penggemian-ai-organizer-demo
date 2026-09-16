@@ -13,6 +13,7 @@
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "test:server": "node --import tsx --test server/test/*.test.ts",
     "test:b1-schema": "node --import tsx --test tests/b1-schema.test.mjs",
+    "test:b3-schema": "node --import tsx --test tests/b3-schema.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "server:dev": "tsx watch server/src/index.ts",
     "server:build": "tsc -p tsconfig.server.json",
@@ -20,7 +21,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx server/src/db/migrate.ts",
     "db:seed": "tsx server/src/db/seed.ts",
-    "job:expire-invitations": "tsx server/src/jobs/expire-invitations.ts"
+    "job:expire-invitations": "tsx server/src/jobs/expire-invitations.ts",
+    "job:deliver-notifications": "tsx server/src/jobs/deliver-notifications.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

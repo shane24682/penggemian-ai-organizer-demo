@@ -9,14 +9,15 @@ import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { createDatabase } from "../src/db/client.js";
 import {
-  requestRoleSlots,
-  requests,
-  schools,
+  deliveryAttempts,
   domainEvents,
   invitations,
   matchCandidates,
   matchRuns,
   notificationOutbox,
+  requestRoleSlots,
+  requests,
+  schools,
   sessionMembers,
   sessions,
   statusEvents,
@@ -24,6 +25,7 @@ import {
   userCapabilities,
   users,
 } from "../src/db/schema/index.js";
+import { processNotificationOutbox } from "../src/notifications/service.js";
 
 const config = loadConfig();
 const connection = createDatabase(config.databaseUrl, 2);
@@ -52,6 +54,37 @@ const login = async (phoneE164: string) => {
   return payload.data.accessToken;
 };
 
+const createSingleCodingSlotRequest = async (token: string, title: string) => {
+  const startsAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
+  const response = await app.request(
+    "/api/v1/requests",
+    jsonRequest(
+      {
+        competitionName: "全国大学生数学建模竞赛",
+        title,
+        description: "B3 并发与通知可靠性集成测试",
+        startsAt: startsAt.toISOString(),
+        endsAt: new Date(startsAt.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+        weeklyHoursRequired: 8,
+        participantLimit: 2,
+        applicationDeadline: new Date(startsAt.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+        sourceChannel: "DIRECT",
+        roleSlots: [{ roleCode: "CODING", slotCount: 1, minLevel: 3, evidenceRequired: true }],
+      },
+      token,
+    ),
+  );
+  assert.equal(response.status, 201);
+  const payload = (await response.json()) as { data: { id: string } };
+  return payload.data.id;
+};
+
+const deleteCreatedRequest = async (requestId: string) => {
+  await cleanupRequestFormation(requestId);
+  await connection.db.delete(requestRoleSlots).where(eq(requestRoleSlots.requestId, requestId));
+  await connection.db.delete(requests).where(eq(requests.id, requestId));
+};
+
 const cleanupRequestFormation = async (requestId: string) => {
   const sessionRows = await connection.db.select({ id: sessions.id }).from(sessions).where(eq(sessions.requestId, requestId));
   const sessionIds = sessionRows.map(({ id }) => id);
@@ -62,6 +95,15 @@ const cleanupRequestFormation = async (requestId: string) => {
   const invitationIds = invitationRows.map(({ id }) => id);
 
   if (invitationIds.length) {
+    const outboxRows = await connection.db
+      .select({ id: notificationOutbox.id })
+      .from(notificationOutbox)
+      .where(inArray(notificationOutbox.aggregateId, invitationIds));
+    if (outboxRows.length) {
+      await connection.db
+        .delete(deliveryAttempts)
+        .where(inArray(deliveryAttempts.outboxId, outboxRows.map(({ id }) => id)));
+    }
     await connection.db.delete(notificationOutbox).where(inArray(notificationOutbox.aggregateId, invitationIds));
   }
   await connection.db.delete(domainEvents).where(eq(domainEvents.requestId, requestId));
@@ -270,7 +312,11 @@ test("real invitations decline, promote a backup, accept, and confirm one sessio
 
     const declineResponse = await app.request(`/api/v1/invitations/${listB.data[0].id}/respond`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${tokenB}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${tokenB}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": `test:${listB.data[0].id}:decline`,
+      },
       body: JSON.stringify({ action: "DECLINE" }),
     });
     assert.equal(declineResponse.status, 200);
@@ -284,7 +330,11 @@ test("real invitations decline, promote a backup, accept, and confirm one sessio
     ] as const) {
       const response = await app.request(`/api/v1/invitations/${invitationId}/respond`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": `test:${invitationId}:accept`,
+        },
         body: JSON.stringify({ action: "ACCEPT" }),
       });
       assert.equal(response.status, 200);
@@ -292,10 +342,26 @@ test("real invitations decline, promote a backup, accept, and confirm one sessio
 
     const repeatedAccept = await app.request(`/api/v1/invitations/${listD.data[0].id}/respond`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${tokenD}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${tokenD}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": `test:${listD.data[0].id}:accept`,
+      },
       body: JSON.stringify({ action: "ACCEPT" }),
     });
     assert.equal(repeatedAccept.status, 200);
+    assert.equal(repeatedAccept.headers.get("Idempotency-Replayed"), "true");
+
+    const reusedKey = await app.request(`/api/v1/invitations/${listD.data[0].id}/respond`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenD}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": `test:${listD.data[0].id}:accept`,
+      },
+      body: JSON.stringify({ action: "DECLINE" }),
+    });
+    assert.equal(reusedKey.status, 409);
 
     const sessionResponse = await app.request(`/api/v1/sessions/${matchPayload.data.sessionId}`, {
       headers: { Authorization: `Bearer ${tokenA}` },
@@ -333,5 +399,221 @@ test("real invitations decline, promote a backup, accept, and confirm one sessio
     assert.ok(eventRows.some(({ eventType }) => eventType === "SESSION_CONFIRMED"));
   } finally {
     await cleanupRequestFormation(requestId);
+  }
+});
+
+test("two candidates racing for the last slot cannot overfill or create duplicate sessions", async () => {
+  const [tokenA, tokenB, tokenD] = await Promise.all([
+    login("+8613800000001"),
+    login("+8613800000002"),
+    login("+8613800000004"),
+  ]);
+  const requestId = await createSingleCodingSlotRequest(tokenA, "B3 最后一席并发接受测试");
+
+  try {
+    const matchResponse = await app.request(`/api/v1/requests/${requestId}/match`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(matchResponse.status, 200);
+    const matchPayload = (await matchResponse.json()) as { data: { sessionId: string } };
+
+    const invitationRows = await connection.db
+      .select({ id: invitations.id, inviteeUserId: invitations.inviteeUserId, status: invitations.status })
+      .from(invitations)
+      .where(eq(invitations.requestId, requestId));
+    assert.equal(invitationRows.length, 2);
+    assert.deepEqual(new Set(invitationRows.map(({ status }) => status)), new Set(["PENDING", "QUEUED"]));
+
+    const queued = invitationRows.find(({ status }) => status === "QUEUED");
+    assert.ok(queued);
+    const promotedAt = new Date();
+    await connection.db
+      .update(invitations)
+      .set({
+        status: "PENDING",
+        sentAt: promotedAt,
+        expiresAt: new Date(promotedAt.getTime() + 24 * 60 * 60 * 1000),
+        updatedAt: promotedAt,
+      })
+      .where(eq(invitations.id, queued.id));
+
+    const tokenByUserId = new Map([
+      ["20000000-0000-4000-8000-000000000002", tokenB],
+      ["20000000-0000-4000-8000-000000000004", tokenD],
+    ]);
+    const responses = await Promise.all(
+      invitationRows.map((invitation) =>
+        app.request(`/api/v1/invitations/${invitation.id}/respond`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${tokenByUserId.get(invitation.inviteeUserId)}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": `b3-race:${requestId}:${invitation.id}`,
+          },
+          body: JSON.stringify({ action: "ACCEPT" }),
+        }),
+      ),
+    );
+    assert.deepEqual(
+      responses.map(({ status }) => status).sort((left, right) => left - right),
+      [200, 409],
+    );
+
+    const winnerIndex = responses.findIndex(({ status }) => status === 200);
+    const winner = invitationRows[winnerIndex];
+    assert.ok(winner);
+    const winnerToken = tokenByUserId.get(winner.inviteeUserId);
+    assert.ok(winnerToken);
+    const repeated = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        app.request(`/api/v1/invitations/${winner.id}/respond`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${winnerToken}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": `b3-race:${requestId}:${winner.id}`,
+          },
+          body: JSON.stringify({ action: "ACCEPT" }),
+        }),
+      ),
+    );
+    assert.ok(repeated.every((response) => response.status === 200));
+    assert.ok(repeated.every((response) => response.headers.get("Idempotency-Replayed") === "true"));
+
+    const [sessionCount] = await connection.db.select({ value: count() }).from(sessions).where(eq(sessions.requestId, requestId));
+    const [memberCount] = await connection.db
+      .select({ value: count() })
+      .from(sessionMembers)
+      .where(eq(sessionMembers.sessionId, matchPayload.data.sessionId));
+    const acceptedRows = await connection.db
+      .select({ id: invitations.id })
+      .from(invitations)
+      .where(and(eq(invitations.requestId, requestId), eq(invitations.status, "ACCEPTED")));
+    assert.equal(sessionCount.value, 1);
+    assert.equal(memberCount.value, 2);
+    assert.equal(acceptedRows.length, 1);
+    const requestOutboxRows = await connection.db
+      .select({ id: notificationOutbox.id })
+      .from(notificationOutbox)
+      .where(inArray(notificationOutbox.aggregateId, invitationRows.map(({ id }) => id)));
+    assert.equal(requestOutboxRows.length, 1);
+  } finally {
+    await deleteCreatedRequest(requestId);
+  }
+});
+
+test("notification outbox records bounded failures and stops after three attempts", async () => {
+  const tokenA = await login("+8613800000001");
+  const requestId = await createSingleCodingSlotRequest(tokenA, "B3 通知重试测试");
+
+  try {
+    const matchResponse = await app.request(`/api/v1/requests/${requestId}/match`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(matchResponse.status, 200);
+
+    const requestInvitationIds = new Set(
+      (await connection.db.select({ id: invitations.id }).from(invitations).where(eq(invitations.requestId, requestId))).map(
+        ({ id }) => id,
+      ),
+    );
+    const requestOutboxRows = await connection.db
+      .select()
+      .from(notificationOutbox)
+      .where(inArray(notificationOutbox.aggregateId, [...requestInvitationIds]));
+    assert.equal(requestOutboxRows.length, 1);
+    const target = requestOutboxRows[0];
+    assert.ok(target);
+
+    const fail = async () => {
+      throw new Error("forced delivery failure");
+    };
+    const firstAt = new Date(Math.max(Date.now(), target.availableAt.getTime()));
+    const first = await processNotificationOutbox(connection.db, fail, firstAt);
+    const secondAt = new Date(firstAt.getTime() + 60_001);
+    const second = await processNotificationOutbox(connection.db, fail, secondAt);
+    const thirdAt = new Date(secondAt.getTime() + 5 * 60_000 + 1);
+    const third = await processNotificationOutbox(connection.db, fail, thirdAt);
+    assert.deepEqual(first, [{ outboxId: target.id, status: "FAILED" }]);
+    assert.deepEqual(second, [{ outboxId: target.id, status: "FAILED" }]);
+    assert.deepEqual(third, [{ outboxId: target.id, status: "DEAD" }]);
+
+    const [stored] = await connection.db.select().from(notificationOutbox).where(eq(notificationOutbox.id, target.id));
+    const attemptRows = await connection.db
+      .select()
+      .from(deliveryAttempts)
+      .where(eq(deliveryAttempts.outboxId, target.id));
+    assert.equal(stored.status, "DEAD");
+    assert.equal(stored.attemptCount, 3);
+    assert.equal(attemptRows.length, 3);
+    assert.ok(attemptRows.every(({ status, errorDetail }) => status === "FAILED" && errorDetail === "forced delivery failure"));
+
+    const noFourthAttempt = await processNotificationOutbox(
+      connection.db,
+      fail,
+      new Date(thirdAt.getTime() + 24 * 60 * 60 * 1000),
+    );
+    assert.deepEqual(noFourthAttempt, []);
+  } finally {
+    await deleteCreatedRequest(requestId);
+  }
+});
+
+test("re-running notification delivery sends one in-app notification and supports read state", async () => {
+  const [tokenA, tokenB, tokenD] = await Promise.all([
+    login("+8613800000001"),
+    login("+8613800000002"),
+    login("+8613800000004"),
+  ]);
+  const requestId = await createSingleCodingSlotRequest(tokenA, "B3 通知去重测试");
+
+  try {
+    const matchResponse = await app.request(`/api/v1/requests/${requestId}/match`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(matchResponse.status, 200);
+    const invitationRows = await connection.db
+      .select({ id: invitations.id })
+      .from(invitations)
+      .where(eq(invitations.requestId, requestId));
+    const [target] = await connection.db
+      .select()
+      .from(notificationOutbox)
+      .where(inArray(notificationOutbox.aggregateId, invitationRows.map(({ id }) => id)));
+    assert.ok(target);
+
+    let sendCount = 0;
+    const sender = async () => {
+      sendCount += 1;
+    };
+    const firstRun = await processNotificationOutbox(connection.db, sender, target.availableAt);
+    const repeatedRun = await processNotificationOutbox(connection.db, sender, new Date(target.availableAt.getTime() + 60_000));
+    assert.deepEqual(firstRun, [{ outboxId: target.id, status: "SENT" }]);
+    assert.deepEqual(repeatedRun, []);
+    assert.equal(sendCount, 1);
+
+    const recipientToken =
+      target.recipientUserId === "20000000-0000-4000-8000-000000000002" ? tokenB : tokenD;
+    const listResponse = await app.request("/api/v1/me/notifications", {
+      headers: { Authorization: `Bearer ${recipientToken}` },
+    });
+    assert.equal(listResponse.status, 200);
+    const listPayload = (await listResponse.json()) as { data: Array<{ id: string; payload: Record<string, unknown> }> };
+    const visible = listPayload.data.find(({ id }) => id === target.id);
+    assert.ok(visible);
+    assert.deepEqual(Object.keys(visible.payload).sort(), ["invitationId", "requestId", "sessionId"]);
+
+    const readResponse = await app.request(`/api/v1/me/notifications/${target.id}/read`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${recipientToken}`, "Content-Type": "application/json" },
+    });
+    assert.equal(readResponse.status, 200);
+    const [stored] = await connection.db.select().from(notificationOutbox).where(eq(notificationOutbox.id, target.id));
+    assert.ok(stored.readAt);
+  } finally {
+    await deleteCreatedRequest(requestId);
   }
 });

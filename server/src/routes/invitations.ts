@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { Database } from "../db/client.js";
 import { ApiError } from "../http/errors.js";
+import { requireIdempotencyKey, runIdempotentTransaction } from "../idempotency/service.js";
 import { success } from "../http/responses.js";
 import type { AppEnv } from "../http/types.js";
 import { parseJson } from "../http/validation.js";
@@ -11,7 +12,7 @@ import {
   getSessionDetail,
   listMyInvitations,
   listMySessions,
-  respondToInvitation,
+  respondToInvitationInTransaction,
 } from "../invitations/service.js";
 
 const invitationStatusSchema = z.enum(["QUEUED", "PENDING", "ACCEPTED", "DECLINED", "EXPIRED", "CANCELLED"]);
@@ -44,7 +45,22 @@ export const createInvitationRoutes = (db: Database) => {
   routes.post("/invitations/:invitationId/respond", async (context) => {
     const invitationId = uuidParam(context.req.param("invitationId"), "INVALID_INVITATION_ID", "邀请编号格式错误");
     const input = await parseJson(context, responseSchema);
-    return success(context, await respondToInvitation(db, invitationId, context.get("auth").userId, input.action));
+    const auth = context.get("auth");
+    const idempotencyKey = requireIdempotencyKey(context.req.header("Idempotency-Key"));
+    const result = await runIdempotentTransaction(
+      db,
+      {
+        userId: auth.userId,
+        routeKey: "POST:/api/v1/invitations/:invitationId/respond",
+        idempotencyKey,
+        request: { invitationId, action: input.action },
+      },
+      async (tx) => ({
+        data: await respondToInvitationInTransaction(tx, invitationId, auth.userId, input.action),
+      }),
+    );
+    context.header("Idempotency-Replayed", result.replayed ? "true" : "false");
+    return success(context, result.data, result.status);
   });
 
   routes.get("/me/sessions", async (context) => success(context, await listMySessions(db, context.get("auth").userId)));

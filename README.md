@@ -13,6 +13,7 @@
 - P0 手机号密码注册/登录、个人资料、可用时间和竞赛能力 API
 - P0 数学建模需求发布、数据库候选筛选、可解释排序和匹配结果持久化
 - P0 真实邀请、接受/拒绝/超时、候补递补、满员成局和成员状态查询
+- P0 邀请响应幂等、最后名额并发保护、站内通知 outbox 与三次有限重试
 
 ## 本地运行
 
@@ -48,16 +49,20 @@ npm run build:edgeone
 
 `test:server` 包含 PostgreSQL 集成测试，运行前需先完成迁移和种子数据。
 
-部署环境每分钟调用一次以下任务，处理到期邀请并自动递补同角色候补：
+部署环境每分钟调用以下任务，分别处理到期邀请/同角色候补递补，以及站内通知投递/失败重试：
 
 ```bash
 npm run job:expire-invitations
+npm run job:deliver-notifications
 ```
 
-B2 API 包括：`GET /api/v1/me/invitations`、
+B2/B3 API 包括：`GET /api/v1/me/invitations`、
 `GET /api/v1/invitations/:invitationId`、
 `POST /api/v1/invitations/:invitationId/respond`、
-`GET /api/v1/me/sessions` 和 `GET /api/v1/sessions/:sessionId`。
+`GET /api/v1/me/sessions`、`GET /api/v1/sessions/:sessionId`、
+`GET /api/v1/me/notifications` 和 `POST /api/v1/me/notifications/:notificationId/read`。
+
+邀请接受/拒绝必须携带最长 128 字符的 `Idempotency-Key` 请求头。相同用户、接口、幂等键和请求体会返回第一次结果并设置 `Idempotency-Replayed: true`；相同幂等键用于不同请求体返回 `409 IDEMPOTENCY_KEY_REUSED`。邀请默认 24 小时有效，但不会晚于需求的报名截止时间。
 
 ## 交接说明
 

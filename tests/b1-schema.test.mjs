@@ -179,14 +179,14 @@ test("Drizzle Kit can export complete PostgreSQL DDL without writing a migration
   assert.match(ddl, /CREATE UNIQUE INDEX "invitations_active_request_user_slot_unique"/);
 });
 
-test("latest unified migration contains every B1 table and enum", () => {
+test("unified migration history contains every B1 table and enum", () => {
   const journal = JSON.parse(
     readFileSync(resolve("server/drizzle/meta/_journal.json"), "utf8"),
   );
-  const latestTag = journal.entries.at(-1)?.tag;
-  assert.equal(latestTag, "0001_overconfident_satana");
+  const b1Tag = journal.entries.find(({ tag }) => tag === "0001_overconfident_satana")?.tag;
+  assert.equal(b1Tag, "0001_overconfident_satana");
 
-  const migration = readFileSync(resolve(`server/drizzle/${latestTag}.sql`), "utf8");
+  const migration = readFileSync(resolve(`server/drizzle/${b1Tag}.sql`), "utf8");
   for (const tableName of [
     "sessions",
     "session_members",
