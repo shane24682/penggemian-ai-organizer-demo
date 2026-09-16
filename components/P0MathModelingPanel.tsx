@@ -1,9 +1,12 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import {
+  ApiRequestError,
+  cancelPublishedRequest,
   getCurrentMatching,
+  getMyRequests,
   login,
   publishMathModelingRequest,
   runMatching,
@@ -30,10 +33,73 @@ const roleName = (candidate: PersistedMatchRun["candidates"][number]) => {
 export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack, onNotify }: Props) {
   const [phone, setPhone] = useState("+8613800000001");
   const [password, setPassword] = useState("");
-  const [phase, setPhase] = useState<"idle" | "working" | "done">("idle");
+  const [phase, setPhase] = useState<"idle" | "restoring" | "working" | "done">("restoring");
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState("");
+  const [requestStatus, setRequestStatus] = useState("");
   const [matchRun, setMatchRun] = useState<PersistedMatchRun | null>(null);
+  const [accessToken, setAccessToken] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    const restore = async () => {
+      const token = localStorage.getItem(TOKEN_KEY) || "";
+      if (!token) {
+        if (active) setPhase("idle");
+        return;
+      }
+      setAccessToken(token);
+      try {
+        const ownRequests = await getMyRequests(token);
+        const latest = ownRequests.find((item) => item.competitionName === "全国大学生数学建模竞赛");
+        if (!latest) {
+          if (active) setPhase("idle");
+          return;
+        }
+        const persisted = await getCurrentMatching(token, latest.id);
+        if (!active) return;
+        setRequestId(latest.id);
+        setRequestStatus(latest.status);
+        setMatchRun(persisted);
+        setPhase("done");
+      } catch (caught) {
+        if (!active) return;
+        if (caught instanceof ApiRequestError && caught.status === 401) {
+          localStorage.removeItem(TOKEN_KEY);
+          setAccessToken("");
+        }
+        setPhase("idle");
+      }
+    };
+    void restore();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "done" || !accessToken || !requestId || requestStatus === "CANCELLED") return;
+    let active = true;
+    const refresh = async () => {
+      if (document.visibilityState === "hidden") return;
+      try {
+        const persisted = await getCurrentMatching(accessToken, requestId);
+        if (active) setMatchRun(persisted);
+      } catch {
+        // The last successfully loaded database state stays visible during a transient refresh failure.
+      }
+    };
+    const intervalId = window.setInterval(() => void refresh(), 5_000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [accessToken, phase, requestId, requestStatus]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -47,6 +113,7 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
       const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
       const session = await login(phone.trim(), password);
       localStorage.setItem(TOKEN_KEY, session.accessToken);
+      setAccessToken(session.accessToken);
       const published = await publishMathModelingRequest(session.accessToken, {
         title: "数模队伍招募编程与写作成员",
         startsAt,
@@ -54,14 +121,28 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
         weeklyHoursRequired: weeklyHours,
       });
       setRequestId(published.id);
+      setRequestStatus(published.status);
       await runMatching(session.accessToken, published.id);
       const persisted = await getCurrentMatching(session.accessToken, published.id);
       setMatchRun(persisted);
+      setRequestStatus(persisted.candidateCount > 0 ? "INVITING" : "OPEN");
       setPhase("done");
       onNotify(`真实需求已发布，已保存 ${persisted.candidateCount} 位候选人`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "发布或匹配失败");
       setPhase("idle");
+    }
+  };
+
+  const cancelCurrent = async () => {
+    if (!accessToken || !requestId) return;
+    setError("");
+    try {
+      const cancelled = await cancelPublishedRequest(accessToken, requestId);
+      setRequestStatus(cancelled.status);
+      onNotify("需求及尚未结束的邀请已取消");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "取消需求失败");
     }
   };
 
@@ -71,7 +152,7 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
       <b>真实数据库</b>
     </div>
 
-    {phase !== "done" ? <form onSubmit={submit}>
+    {phase === "restoring" ? <div className="p0-empty">正在从 PostgreSQL 恢复上次需求和匹配结果…</div> : phase !== "done" ? <form onSubmit={submit}>
       <div className="p0-login-grid">
         <label>发起人手机号<input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+8613800000001" autoComplete="username" /></label>
         <label>密码<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="输入账号密码" autoComplete="current-password" /></label>
@@ -88,6 +169,7 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
       </button>
       <small className="p0-dev-note">本地种子账号可用于联调；账号身份来自 JWT，候选人和匹配结果均由服务端读取并持久化。</small>
     </form> : matchRun && <>
+      {requestStatus === "CANCELLED" && <p className="p0-error">该需求已取消，候选结果仅作为历史记录展示。</p>}
       <div className="p0-proof-strip">
         <span>✓ 需求已入库</span><span>✓ 匹配批次已保存</span><span>✓ 已从数据库回读</span>
       </div>
@@ -100,8 +182,9 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
         </article>)}
         {!matchRun.candidates.length && <div className="p0-empty">需求已保存，但当前没有通过硬门槛的候选人。可调整启动会时间或每周投入后重新发布。</div>}
       </div>
-      <div className="p0-handoff"><b>下一步：邀请服务</b><p>候选结果已经是真实共享数据；邀请、接受/拒绝、候补递补和成局由另一位同学的服务接入，这里不模拟对方回应。</p></div>
-      <button className="wide-button secondary" onClick={() => { setPhase("idle"); setMatchRun(null); setRequestId(""); }}>再发布一条需求<span>→</span></button>
+      <div className="p0-handoff"><b>真实邀请已入库</b><p>主选和候补邀请由服务端创建并共享；本页每 5 秒从服务端刷新匹配结果，不模拟其他账号回应。</p></div>
+      {!["CANCELLED", "FULFILLED", "EXPIRED"].includes(requestStatus) && <button className="wide-button secondary" onClick={() => void cancelCurrent()}>取消当前需求<span>×</span></button>}
+      <button className="wide-button secondary" onClick={() => { setPhase("idle"); setMatchRun(null); setRequestId(""); setRequestStatus(""); }}>再发布一条需求<span>→</span></button>
     </>}
     <button className="p0-back" onClick={onBack}>← 返回修改组队条件</button>
   </div>;

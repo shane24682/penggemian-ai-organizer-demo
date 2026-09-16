@@ -155,7 +155,19 @@ test("a real account can publish and reload its request while another user canno
       .from(requests)
       .where(and(eq(requests.id, requestId), eq(requests.creatorUserId, "20000000-0000-4000-8000-000000000001")));
     assert.equal(stored.id, requestId);
+    const [openedStatusEvent] = await connection.db
+      .select()
+      .from(statusEvents)
+      .where(and(eq(statusEvents.aggregateId, requestId), eq(statusEvents.eventType, "REQUEST_OPENED")));
+    const [openedDomainEvent] = await connection.db
+      .select()
+      .from(domainEvents)
+      .where(and(eq(domainEvents.requestId, requestId), eq(domainEvents.eventType, "REQUEST_OPENED")));
+    assert.equal(openedStatusEvent.toStatus, "OPEN");
+    assert.equal(openedDomainEvent.dataScope, "TEST");
   } finally {
+    await connection.db.delete(domainEvents).where(eq(domainEvents.requestId, requestId));
+    await connection.db.delete(statusEvents).where(eq(statusEvents.aggregateId, requestId));
     await connection.db.delete(requestRoleSlots).where(eq(requestRoleSlots.requestId, requestId));
     await connection.db.delete(requests).where(eq(requests.id, requestId));
   }
@@ -354,6 +366,80 @@ test("the creator can cancel an inviting request and its active lifecycle record
     );
   } finally {
     await cleanupRequestFormation(requestId);
+  }
+});
+
+test("ops can list a filtered flow and reconstruct its complete database trail", async () => {
+  const requestId = "30000000-0000-4000-8000-000000000001";
+  const userAId = "20000000-0000-4000-8000-000000000001";
+  await cleanupRequestFormation(requestId);
+  await connection.db.update(users).set({ role: "OPS", updatedAt: new Date() }).where(eq(users.id, userAId));
+  const [tokenOps, tokenUser] = await Promise.all([login("+8613800000001"), login("+8613800000002")]);
+
+  try {
+    const matchResponse = await app.request(`/api/v1/requests/${requestId}/match`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenOps}` },
+    });
+    assert.equal(matchResponse.status, 200);
+
+    const forbidden = await app.request("/api/v1/ops/flows", {
+      headers: { Authorization: `Bearer ${tokenUser}` },
+    });
+    assert.equal(forbidden.status, 403);
+
+    const listResponse = await app.request(
+      "/api/v1/ops/flows?sceneCode=MATH_MODELING&sourceChannel=DIRECT&status=INVITING&dataScope=TEST&limit=10",
+      { headers: { Authorization: `Bearer ${tokenOps}` } },
+    );
+    assert.equal(listResponse.status, 200);
+    const listPayload = (await listResponse.json()) as {
+      data: {
+        items: Array<{
+          requestId: string;
+          requestStatus: string;
+          counts: { candidates: number; invitations: number; members: number };
+        }>;
+      };
+    };
+    const flow = listPayload.data.items.find((item) => item.requestId === requestId);
+    assert.ok(flow);
+    assert.equal(flow.requestStatus, "INVITING");
+    assert.deepEqual(flow.counts, {
+      candidates: 3,
+      invitations: 3,
+      pendingInvitations: 2,
+      acceptedInvitations: 0,
+      members: 1,
+      checkedIn: 0,
+      failedNotifications: 0,
+    });
+
+    const detailResponse = await app.request(`/api/v1/ops/flows/${requestId}`, {
+      headers: { Authorization: `Bearer ${tokenOps}` },
+    });
+    assert.equal(detailResponse.status, 200);
+    const detailPayload = (await detailResponse.json()) as {
+      data: {
+        request: { id: string };
+        matching: { runs: unknown[]; candidates: unknown[] };
+        session: { members: unknown[] };
+        invitations: unknown[];
+        notifications: unknown[];
+        events: { status: unknown[]; domain: unknown[] };
+      };
+    };
+    assert.equal(detailPayload.data.request.id, requestId);
+    assert.equal(detailPayload.data.matching.runs.length, 1);
+    assert.equal(detailPayload.data.matching.candidates.length, 3);
+    assert.equal(detailPayload.data.session.members.length, 1);
+    assert.equal(detailPayload.data.invitations.length, 3);
+    assert.equal(detailPayload.data.notifications.length, 2);
+    assert.ok(detailPayload.data.events.status.length >= 2);
+    assert.ok(detailPayload.data.events.domain.length >= 1);
+  } finally {
+    await cleanupRequestFormation(requestId);
+    await connection.db.update(users).set({ role: "USER", updatedAt: new Date() }).where(eq(users.id, userAId));
   }
 });
 

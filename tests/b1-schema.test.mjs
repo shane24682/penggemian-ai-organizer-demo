@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { getTableConfig } from "drizzle-orm/pg-core";
 
@@ -162,14 +163,14 @@ test("Drizzle Kit can export complete PostgreSQL DDL without writing a migration
   const ddl = execFileSync(
     process.execPath,
     [
-      drizzleKit.pathname.slice(1),
+      fileURLToPath(drizzleKit),
       "export",
       "--dialect",
       "postgresql",
       "--schema",
       "server/src/db/schema/index.ts",
     ],
-    { cwd: new URL("..", import.meta.url), encoding: "utf8" },
+    { cwd: fileURLToPath(new URL("..", import.meta.url)), encoding: "utf8" },
   );
 
   assert.match(ddl, /CREATE TYPE "public"\."session_status" AS ENUM/);

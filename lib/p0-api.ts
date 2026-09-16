@@ -9,6 +9,17 @@ type ApiErrorEnvelope = {
   error?: { code?: string; message?: string };
 };
 
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
+
 export type AuthSession = {
   accessToken: string;
   user: { id: string; schoolId: string; role: "USER" | "OPS" | "ADMIN"; displayName: string };
@@ -63,7 +74,11 @@ const request = async <T>(path: string, init: RequestInit = {}, token?: string):
   });
   const payload = (await response.json().catch(() => ({}))) as ApiEnvelope<T> & ApiErrorEnvelope;
   if (!response.ok) {
-    throw new Error(payload.error?.message || `请求失败（HTTP ${response.status}）`);
+    throw new ApiRequestError(
+      payload.error?.message || `请求失败（HTTP ${response.status}）`,
+      response.status,
+      payload.error?.code,
+    );
   }
   return payload.data;
 };
@@ -115,3 +130,13 @@ export const runMatching = (token: string, requestId: string) =>
 
 export const getCurrentMatching = (token: string, requestId: string) =>
   request<PersistedMatchRun>(`/api/v1/requests/${requestId}/matches/current`, {}, token);
+
+export const getMyRequests = (token: string) =>
+  request<PublishedRequest[]>("/api/v1/me/requests", {}, token);
+
+export const cancelPublishedRequest = (token: string, requestId: string) =>
+  request<PublishedRequest>(
+    `/api/v1/requests/${requestId}/cancel`,
+    { method: "POST" },
+    token,
+  );

@@ -13,6 +13,8 @@
 - P0 手机号密码注册/登录、个人资料、可用时间和竞赛能力 API
 - P0 数学建模需求发布、数据库候选筛选、可解释排序和匹配结果持久化
 - P0 真实邀请、接受/拒绝/超时、候补递补、满员成局和成员状态查询
+- P0 需求取消、真实成局时间冲突过滤，以及刷新后的需求和匹配结果恢复
+- P0 运营流程追踪和成局率、到场率、复组率、单位成本查询
 
 ## 本地运行
 
@@ -43,6 +45,7 @@ npm run dev
 ```bash
 npm run server:build
 npm run test:server
+npm run test:b1-schema
 npm run build:edgeone
 ```
 
@@ -58,6 +61,17 @@ B2 API 包括：`GET /api/v1/me/invitations`、
 `GET /api/v1/invitations/:invitationId`、
 `POST /api/v1/invitations/:invitationId/respond`、
 `GET /api/v1/me/sessions` 和 `GET /api/v1/sessions/:sessionId`。
+
+运营账号使用 `GET /api/v1/ops/flows` 查询流程列表，使用
+`GET /api/v1/ops/flows/:requestId` 还原单条需求的匹配、邀请、成局、通知和事件轨迹，
+使用 `GET /api/v1/ops/metrics?from=...&to=...` 查询四项冻结指标。普通用户不能访问这些接口。
+
+## 发布与回滚
+
+- 发布前依次执行 migration、seed（仅非生产环境）、服务端测试和 EdgeOne 构建。
+- migration 按编号向前执行，不在生产库手工删除表或回写旧 migration。
+- 数据库变更前创建备份；需要回滚时先确认旧服务兼容当前 Schema，再回退服务版本。
+- 如果 Schema 不向后兼容，使用发布前备份恢复数据库，不使用临时 SQL 猜测性回滚。
 
 ## 交接说明
 

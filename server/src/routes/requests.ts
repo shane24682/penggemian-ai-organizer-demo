@@ -4,7 +4,14 @@ import { z } from "zod";
 
 import type { AppConfig } from "../config.js";
 import type { Database } from "../db/client.js";
-import { requestRoleSlots, requests } from "../db/schema/index.js";
+import {
+  domainEvents,
+  requestRoleSlots,
+  requests,
+  sessionMembers,
+  sessions,
+  statusEvents,
+} from "../db/schema/index.js";
 import { ApiError } from "../http/errors.js";
 import { success } from "../http/responses.js";
 import type { AppEnv } from "../http/types.js";
@@ -82,6 +89,26 @@ export const createRequestRoutes = (config: AppConfig, db: Database) => {
         .insert(requestRoleSlots)
         .values(input.roleSlots.map((slot) => ({ requestId: created.id, ...slot })))
         .returning();
+      await tx.insert(statusEvents).values({
+        aggregateType: "REQUEST",
+        aggregateId: created.id,
+        eventType: "REQUEST_OPENED",
+        actorUserId: auth.userId,
+        fromStatus: null,
+        toStatus: "OPEN",
+        idempotencyKey: `request:${created.id}:opened`,
+      });
+      await tx.insert(domainEvents).values({
+        schoolId: created.schoolId,
+        actorUserId: auth.userId,
+        eventType: "REQUEST_OPENED",
+        aggregateType: "REQUEST",
+        aggregateId: created.id,
+        requestId: created.id,
+        dataScope: created.dataScope,
+        payloadJson: { sceneCode: created.sceneCode, sourceChannel: created.sourceChannel },
+        dedupeKey: `request:${created.id}:opened`,
+      });
       return { ...created, roleSlots: slots };
     });
     return success(context, request, 201);
@@ -110,9 +137,20 @@ export const createRequestRoutes = (config: AppConfig, db: Database) => {
       .from(requests)
       .where(and(eq(requests.id, requestId), isNull(requests.deletedAt)))
       .limit(1);
-    if (!request || !canViewRequest(auth, request)) {
+    if (!request) {
       throw new ApiError(404, "REQUEST_NOT_FOUND", "需求不存在");
     }
+    let canView = canViewRequest(auth, request);
+    if (!canView) {
+      const [membership] = await db
+        .select({ id: sessionMembers.id })
+        .from(sessionMembers)
+        .innerJoin(sessions, eq(sessions.id, sessionMembers.sessionId))
+        .where(and(eq(sessions.requestId, requestId), eq(sessionMembers.userId, auth.userId)))
+        .limit(1);
+      canView = Boolean(membership);
+    }
+    if (!canView) throw new ApiError(404, "REQUEST_NOT_FOUND", "需求不存在");
     const slots = await db.select().from(requestRoleSlots).where(eq(requestRoleSlots.requestId, request.id));
     return success(context, { ...request, roleSlots: slots });
   });
