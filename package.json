@@ -11,7 +11,8 @@
     "build:edgeone": "vite build --config vite.edgeone.config.ts",
     "start": "vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
-    "test:server": "node --import tsx --test server/test/*.test.ts",
+    "test:p0-requests": "node --import tsx --test tests/p0-requests.test.ts",
+    "test:server": "node --import tsx --test --test-concurrency=1 server/test/*.test.ts",
     "test:b1-schema": "node --import tsx --test tests/b1-schema.test.mjs",
     "test:b3-schema": "node --import tsx --test tests/b3-schema.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
@@ -28,7 +29,10 @@
     "test:b4-integration": "node --import tsx --test server/test/fulfillment.integration.test.ts",
     "test:b5": "node --import tsx --test tests/p0-workflow.test.ts",
     "test:b5-browser": "node --import tsx tests/b5-browser-smoke.mjs",
-    "typecheck:h5": "tsc -p tsconfig.h5.json"
+    "typecheck:h5": "tsc -p tsconfig.h5.json",
+    "test:b6": "node --import tsx --test tests/p0-ops.test.ts",
+    "test:b6-integration": "node --import tsx --test server/test/ops.integration.test.ts",
+    "test:b6-browser": "node --import tsx tests/b5-browser-smoke.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

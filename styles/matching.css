@@ -395,6 +395,10 @@
 .p0-login-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .p0-login-grid label { color: var(--color-text-muted); font-size: var(--text-body-sm); font-weight: 800; }
 .p0-login-grid input { margin-top: 6px; }
+.p0-current-user { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-soft); padding: 11px 13px; }
+.p0-current-user small { color: var(--color-text-muted); }
+.p0-current-user b { color: var(--color-deep); }
+.p0-current-user span { margin-left: auto; color: var(--color-success); font-size: var(--text-caption); font-weight: 800; }
 .p0-frozen-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
 .p0-frozen-summary div { border: 1px solid var(--color-border); border-radius: 11px; background: var(--color-surface-soft); padding: 10px; }
 .p0-frozen-summary small,

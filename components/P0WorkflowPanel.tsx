@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getCurrentMatching, login, P0ApiError, runMatching, type PersistedMatchRun } from "@/lib/p0-api";
+import { getCurrentMatching, P0ApiError, runMatching, type PersistedMatchRun } from "@/lib/p0-api";
 import {
-  invitationExplanation, loadWorkflowSnapshot, pendingOperation, P0_TOKEN_KEY,
+  invitationExplanation, loadWorkflowSnapshot, pendingOperation,
   startWorkflowPolling, statusLabel, writeWorkflow,
   type SessionBundle, type WorkflowSnapshot,
 } from "@/lib/p0-workflow";
+import { useAuth } from "@/features/auth/AuthProvider";
 import styles from "./P0WorkflowPanel.module.css";
 
 const tabs = { invitations: "我的邀请", backups: "候补进度", sessions: "我的成局", history: "活动历史", requests: "我的需求", notifications: "站内通知" } as const;
@@ -82,7 +83,7 @@ function Fulfillment({ detail, userId, busy, execute }: { detail: SessionBundle;
 }
 
 export default function P0WorkflowPanel({ initialTab = "invitations" }: { initialTab?: Tab }) {
-  const [token, setToken] = useState("");
+  const { accessToken: token } = useAuth();
   const [tab, setTab] = useState<Tab>(initialTab);
   const [sessionId, setSessionId] = useState("");
   const [snapshot, setSnapshot] = useState<WorkflowSnapshot | null>(null);
@@ -90,39 +91,26 @@ export default function P0WorkflowPanel({ initialTab = "invitations" }: { initia
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [matchRun, setMatchRun] = useState<PersistedMatchRun | null>(null);
   const lock = useRef(false);
   const activeToken = useRef("");
   const readSequence = useRef(0);
 
-  const changeAuth = useCallback((value: string, preserveSelection = false) => {
-    activeToken.current = value; setToken(value); setSnapshot(null); setSessionId(""); setMatchRun(null); setNotice("");
-    if (!preserveSelection) {
-      const url = new URL(window.location.href); url.searchParams.delete("session");
-      window.history.replaceState(null, "", url);
-    }
-  }, []);
-
+  useEffect(() => {
+    activeToken.current = token;
+    return () => { activeToken.current = ""; };
+  }, [token]);
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      try {
-        const saved = localStorage.getItem(P0_TOKEN_KEY) || "";
-        changeAuth(saved, true);
-        const url = new URL(window.location.href);
-        const selected = url.searchParams.get("session") || "";
-        if (/^[a-f0-9-]{36}$/i.test(selected)) setSessionId(selected);
-        const savedTab = url.searchParams.get("p0tab");
-        if (savedTab && savedTab in tabs) setTab(savedTab as Tab);
-      } catch { setActionError("浏览器存储不可用，请允许本站保存登录凭证后重试"); }
-      setLoading(false);
+      const url = new URL(window.location.href);
+      const selected = url.searchParams.get("session") || "";
+      if (/^[a-f0-9-]{36}$/i.test(selected)) setSessionId(selected);
+      const savedTab = url.searchParams.get("p0tab");
+      if (savedTab && savedTab in tabs) setTab(savedTab as Tab);
     }, 0);
-    const onStorage = (event: StorageEvent) => { if (event.key === P0_TOKEN_KEY || event.key === null) changeAuth(event.newValue || ""); };
-    window.addEventListener("storage", onStorage);
-    return () => { window.clearTimeout(timer); window.removeEventListener("storage", onStorage); activeToken.current = ""; };
-  }, [changeAuth]);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const refresh = useCallback(async (signal: AbortSignal) => {
     if (!token) return;
@@ -133,11 +121,9 @@ export default function P0WorkflowPanel({ initialTab = "invitations" }: { initia
       setSnapshot(data); setLoadError(""); setLoading(false);
     } catch (error) {
       if (signal.aborted || token !== activeToken.current || sequence !== readSequence.current) return;
-      if (error instanceof P0ApiError && error.status === 401) {
-        localStorage.removeItem(P0_TOKEN_KEY); changeAuth(""); setActionError("登录已过期，请重新登录");
-      } else { setLoadError(errorMessage(error)); setLoading(false); }
+      setLoadError(errorMessage(error)); setLoading(false);
     }
-  }, [token, sessionId, changeAuth]);
+  }, [token, sessionId]);
   useEffect(() => { if (token) return startWorkflowPolling(refresh); }, [token, refresh]);
 
   const select = (id: string, nextTab = tab) => {
@@ -169,16 +155,10 @@ export default function P0WorkflowPanel({ initialTab = "invitations" }: { initia
   };
 
   return <div className={`workspace-view embedded-view ${styles.root}`}>
-    <header className={styles.heading}><div><small>P0 · PostgreSQL 真实共享数据</small><h2>数模活动工作台</h2><p>不同设备登录各自账号即可回应邀请；状态每 5 秒回读，后台降为每分钟。</p></div>{token && <button disabled={busy} onClick={() => { localStorage.removeItem(P0_TOKEN_KEY); changeAuth(""); select(""); }}>退出账号</button>}</header>
+    <header className={styles.heading}><div><small>P0 · PostgreSQL 真实共享数据</small><h2>数模活动工作台</h2><p>不同设备登录各自账号即可回应邀请；状态每 5 秒回读，后台降为每分钟。</p></div></header>
     {actionError && <p className={styles.error} role="alert">{actionError}</p>}
     {notice && <p className={styles.success} role="status">{notice}</p>}
-    {!token ? <form className={styles.card} onSubmit={(event) => {
-      event.preventDefault(); if (lock.current) return;
-      lock.current = true; setBusy(true); setActionError("");
-      void login(phone.trim(), password).then((auth) => {
-        localStorage.setItem(P0_TOKEN_KEY, auth.accessToken); setPassword(""); changeAuth(auth.accessToken); setLoading(true);
-      }).catch((error: unknown) => setActionError(errorMessage(error))).finally(() => { lock.current = false; setBusy(false); });
-    }}><h3>登录你的校园账号</h3><label>手机号<input required value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="username" inputMode="tel" placeholder="+8613800000002"/></label><label>密码<input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password"/></label><button disabled={busy}>{busy ? "正在登录…" : "登录并从数据库恢复"}</button><p>使用自己的账号。手机号、密码不会写入活动记录或页面缓存。</p></form> : <>
+    {token && <>
       <p>当前用户：{snapshot?.user.displayName || "正在验证登录身份…"}</p>
       <nav className={styles.tabs} aria-label="数模业务导航">{(Object.keys(tabs) as Tab[]).map((name) => <button key={name} aria-pressed={tab === name} disabled={busy} onClick={() => select("", name)}>{tabs[name]}</button>)}</nav>
       {loadError && <div className={styles.error} role="alert">读取失败：{loadError}。{snapshot ? "以下为上次读取结果，不代表最新状态；写操作已禁用。" : "未读取成功，不显示模拟数据。"}<button onClick={() => { setLoading(true); void refresh(new AbortController().signal); }}>重新读取</button>{sessionId && <button onClick={() => select("")}>返回列表</button>}</div>}

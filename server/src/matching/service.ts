@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, lt, ne, sql } from "drizzle-orm";
 
 import type { Database } from "../db/client.js";
 import {
@@ -49,6 +49,19 @@ export type MatchingExecution = {
 };
 
 const loadCandidates = async (db: Database, request: MatchingRequest): Promise<MatchingCandidate[]> => {
+  const conflictingRows = await db
+    .selectDistinct({ userId: sessionMembers.userId })
+    .from(sessionMembers)
+    .innerJoin(sessions, eq(sessions.id, sessionMembers.sessionId))
+    .where(
+      and(
+        inArray(sessions.status, ["CONFIRMED", "IN_PROGRESS"]),
+        eq(sessionMembers.memberStatus, "CONFIRMED"),
+        lt(sessions.startsAt, request.endsAt),
+        gt(sessions.endsAt, request.startsAt),
+      ),
+    );
+  const conflictingUserIds = new Set(conflictingRows.map(({ userId }) => userId));
   const rows = await db
     .select({
       userId: users.id,
@@ -96,8 +109,7 @@ const loadCandidates = async (db: Database, request: MatchingRequest): Promise<M
       level: row.level,
       verificationStatus: row.verificationStatus,
       availability: [{ startsAt: row.availabilityStartsAt, endsAt: row.availabilityEndsAt }],
-      // The invitation/session owner will replace this with a real overlap query when their schema is integrated.
-      hasScheduleConflict: false,
+      hasScheduleConflict: conflictingUserIds.has(row.userId),
     });
   }
   return [...grouped.values()];

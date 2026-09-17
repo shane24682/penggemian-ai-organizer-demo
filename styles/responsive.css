@@ -78,9 +78,13 @@
   .workspace-rail .rail-logo { width: 40px; height: 40px; min-height: 40px; font-size: 19px; }
   .workspace-rail button { min-height: 47px; font-size: 0; }
   .workspace-rail button span { font-size: 17px; }
-  .workspace-top > div > button { display: none; }
-  .workspace-top > div > b { display: grid; }
-  .workspace-location { max-width: 200px; font-size: var(--text-body-sm); }
+  .workspace-tools > button { display: none; }
+  .workspace-account { gap: 3px; }
+  .workspace-account > div { min-width: 0; }
+  .workspace-account > div b { max-width: 58px; }
+  .workspace-account > div small { display: none; }
+  .workspace-account > button { padding-inline: 8px; }
+  .workspace-location { max-width: 120px; font-size: var(--text-body-sm); }
   .view-heading h2 { font-size: 26px; }
   .view-heading > b { display: none; }
   .reference-hero h1 { font-size: 34px; }

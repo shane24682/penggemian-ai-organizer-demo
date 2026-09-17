@@ -16,6 +16,9 @@
 - P0 邀请响应幂等、最后名额并发保护、站内通知 outbox 与三次有限重试
 - P0 成员签到、活动开始/完成结算、缺席记录与履约信用、私人评价和双向复组需求
 - P0 数模活动工作台：真实邀请、候补进度、成局详情、签到、评价、复组、活动历史和站内通知，支持刷新恢复及跨账号隔离
+- P0 需求取消、真实成局时间冲突过滤，以及刷新后的需求和匹配结果恢复
+- P0 运营流程追踪和成局率、到场率、复组率、单位成本查询
+
 
 ## 本地运行
 
@@ -46,6 +49,7 @@ npm run dev
 ```bash
 npm run server:build
 npm run test:server
+npm run test:b1-schema
 npm run build:edgeone
 ```
 
@@ -103,6 +107,38 @@ npm run test
 双手机联调必须在构建前把 `VITE_API_BASE_URL` 设置为两台手机可访问的 HTTPS 业务服务地址，并配置 `CORS_ORIGIN` 为 H5 来源；手机上的 `localhost` 指向手机自己。生产可设置 `VITE_API_BASE_URL=/` 并通过同域网关把 `/api/v1` 转发到业务服务。迁移和 seed 沿用统一流程，B5 不新增 migration。
 
 隔离数据库浏览器冒烟命令、六项交付映射和验证边界见 `docs/b5-delivery.md`。
+
+运营账号使用 `GET /api/v1/ops/flows` 查询流程列表，使用
+`GET /api/v1/ops/flows/:requestId` 还原单条需求的匹配、邀请、成局、通知和事件轨迹，
+使用 `GET /api/v1/ops/metrics?from=...&to=...` 查询四项冻结指标。普通用户不能访问这些接口。
+
+## B6 运营工作台
+
+登录一次后，OPS/ADMIN 可点击“运营”或访问 `/?view=ops`。接入 A5 的流程列表、详情和四项指标，支持学校、数模场景、渠道、需求状态、数据范围和北京时间区间筛选。邀请、回应、成局、签到和异常记录按当前需求游标页展示，可追溯完整状态事件及通知尝试。指标始终只统计 REAL，不受 TEST/DEMO 列表切换影响。
+
+`GET /api/v1/ops/flows` 默认 20、最大 100，使用 `cursor`/返回的 `pagination.nextCursor` 分页；保留 A 旧客户端的 offset 兼容，但不可与 cursor 混用。详情包含活动级和需求级时间/成本记录。B4/B5 页面已适配 A 的全局认证，不再提供独立登录入口。
+
+`POST /api/v1/ops/actions` 仅允许运营/管理员，要求 JSON 和 Idempotency-Key：
+
+- 人工时间：`{ actionType: "LOG_WORK", requestId, sessionId?, reason, minutesSpent }`，整数分钟 1～1440。
+- 实际成本：`{ actionType: "RECORD_COST", requestId, sessionId?, reason, costType, amountCents, incurredAt }`，非负整数分，CNY。
+
+记录只追加，并写业务审计事件；用户和学校由服务端判断。该接口不提供强制修改业务状态的操作。OPS 限本校，ADMIN 可显式选择学校；使用已有、经管理员授权的账号，不开放前端注册运营角色。
+
+```bash
+npm run test:b6
+npm run test:b6-integration
+npm run lint
+```
+
+`test:server` 以文件级串行运行，防止共享种子库的角色/学校/信用临时变更干扰其他测试；测试内部的并发抢位和重复点击仍并行执行。仅使用独占隔离 TEST 数据库。`test:b6-browser` 沿用 B5 浏览器脚本的环境配置，同时验证全局认证及运营写入/刷新恢复。完整交接和验收说明见 `docs/b6-delivery.md`。
+
+## 发布与回滚
+
+- 发布前依次执行 migration、seed（仅非生产环境）、服务端测试和 EdgeOne 构建。
+- migration 按编号向前执行，不在生产库手工删除表或回写旧 migration。
+- 数据库变更前创建备份；需要回滚时先确认旧服务兼容当前 Schema，再回退服务版本。
+- 如果 Schema 不向后兼容，使用发布前备份恢复数据库，不使用临时 SQL 猜测性回滚。
 
 ## 交接说明
 

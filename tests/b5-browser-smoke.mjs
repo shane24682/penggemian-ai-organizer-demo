@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { and, eq, inArray, or } from "drizzle-orm";
 
@@ -24,6 +25,7 @@ const requestIds = [];
 const errors = [];
 const pages = [];
 const output = process.env.B5_SCREENSHOT_DIR;
+const opsId = randomUUID();
 const call = async (path, token, body, key) => {
   const response = await fetch(`${api}${path}`, { method: body === undefined ? "GET" : "POST",
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(key ? { "Idempotency-Key": key } : {}) },
@@ -57,7 +59,7 @@ const loginPage = async (index) => {
   await page.goto(`${h5}/?p0=1`);
   await page.getByLabel("手机号", { exact: true }).fill(`+861380000000${index}`);
   await page.getByLabel("密码", { exact: true }).fill("PenggemianTest!2026");
-  await page.getByRole("button", { name: "登录并从数据库恢复" }).click();
+  await page.getByRole("button", { name: "登录并进入工作台" }).click();
   await waitText(page, `当前用户：测试${index === 4 ? "候补D" : index === 2 ? "主选B" : "主选C"}`);
   return page;
 };
@@ -141,16 +143,52 @@ try {
   assert.equal(await pageB.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
   assert.deepEqual(errors, []);
   console.log("PASS network error/retry, mobile width and no browser runtime exceptions");
-  await pageB.getByRole("button", { name: "退出账号", exact: true }).click();
+  await pageB.getByRole("button", { name: "退出当前账号", exact: true }).click();
   await pageB.getByLabel("手机号", { exact: true }).fill("+8613800000003");
   await pageB.getByLabel("密码", { exact: true }).fill("PenggemianTest!2026");
-  await pageB.getByRole("button", { name: "登录并从数据库恢复" }).click();
+  await pageB.getByRole("button", { name: "登录并进入工作台" }).click();
   await waitText(pageB, "当前用户：测试主选C");
   await tab(pageB, "活动历史");
   await card(pageB, second.title).getByRole("button", { name: "查看成员、签到与复组" }).click();
   await waitText(pageB, "暂无本人提交的评价");
   assert.equal(await pageB.getByText("B5 真实浏览器评价", { exact: false }).count(), 0);
   console.log("PASS account switch re-reads server identity and does not expose B private reviews to C");
+  const [seedUser] = await db.select().from(schema.users).where(eq(schema.users.id, users[0]));
+  const [seedProfile] = await db.select().from(schema.userProfiles).where(eq(schema.userProfiles.userId, users[0]));
+  const opsPhone = `+86139${String(Date.now()).slice(-8)}`;
+  await db.insert(schema.users).values({ ...seedUser, id: opsId, phoneE164: opsPhone, role: "OPS" });
+  await db.insert(schema.userProfiles).values({ ...seedProfile, userId: opsId, displayName: "B6测试运营" });
+  const opsContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
+  const opsPage = await opsContext.newPage(); pages.push(opsPage); opsPage.readCount = () => 0;
+  opsPage.on("pageerror", (error) => errors.push(error.message));
+  await opsPage.goto(`${h5}/?view=ops`);
+  await opsPage.getByLabel("手机号", { exact: true }).fill(opsPhone);
+  await opsPage.getByLabel("密码", { exact: true }).fill("PenggemianTest!2026");
+  await opsPage.getByRole("button", { name: "登录并进入工作台" }).click();
+  await opsPage.getByRole("heading", { name: "运营工作台", exact: true }).waitFor();
+  assert.equal(await opsPage.getByLabel("手机号", { exact: true }).count(), 0);
+  await opsPage.getByLabel("列表数据范围", { exact: true }).selectOption("TEST");
+  await opsPage.getByRole("button", { name: "查询 / 刷新", exact: true }).click();
+  await card(opsPage, second.title).filter({ has: opsPage.getByText(second.id, { exact: true }) }).getByRole("button", { name: "追溯需求与完整链路" }).click();
+  await opsPage.getByRole("heading", { name: `完整轨迹：${second.title}`, exact: true }).waitFor();
+  await opsPage.getByLabel("处理原因 / 备注", { exact: true }).fill("B6 浏览器人工跟进");
+  await opsPage.getByLabel("人工分钟", { exact: true }).fill("7");
+  await opsPage.getByRole("button", { name: "记录人工时间", exact: true }).click();
+  await waitText(opsPage, "运营记录已入库");
+  await opsPage.getByLabel("实际成本（整数分，CNY）", { exact: true }).fill("125");
+  await opsPage.getByRole("button", { name: "记录实际成本", exact: true }).click();
+  await opsPage.getByRole("heading", { name: "实际成本记录（1）", exact: true }).waitFor();
+  assert.equal((await db.select().from(schema.opsWorkLogs).where(eq(schema.opsWorkLogs.requestId, second.id)))[0].minutesSpent, 7);
+  assert.equal((await db.select().from(schema.costItems).where(eq(schema.costItems.requestId, second.id)))[0].amountCents, 125);
+  assert.equal(await opsPage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+  await opsPage.reload(); await opsPage.getByRole("heading", { name: "运营工作台", exact: true }).waitFor();
+  await opsPage.getByLabel("列表数据范围", { exact: true }).selectOption("TEST");
+  await opsPage.getByRole("button", { name: "查询 / 刷新", exact: true }).click();
+  await card(opsPage, second.title).filter({ has: opsPage.getByText(second.id, { exact: true }) }).getByRole("button", { name: "追溯需求与完整链路" }).click();
+  await opsPage.getByRole("heading", { name: "人工时间记录（1）", exact: true }).waitFor();
+  if (output) await opsPage.screenshot({ path: join(output, "b6-mobile-ops.png"), fullPage: true });
+  assert.deepEqual(errors, []);
+  console.log("PASS B6 global ops login → filtered flows/REAL metrics → work/cost writes → DB/reload recovery");
 } catch (error) {
   console.error("Browser exceptions:", errors);
   for (const [index, page] of pages.entries()) {
@@ -173,6 +211,8 @@ try {
     if (outbox.length) await tx.delete(schema.deliveryAttempts).where(inArray(schema.deliveryAttempts.outboxId, outbox.map(({ id }) => id)));
     if (invitationIds.length) await tx.delete(schema.notificationOutbox).where(inArray(schema.notificationOutbox.aggregateId, invitationIds));
     if (requestIds.length) {
+      await tx.delete(schema.opsWorkLogs).where(inArray(schema.opsWorkLogs.requestId, requestIds));
+      await tx.delete(schema.costItems).where(inArray(schema.costItems.requestId, requestIds));
       await tx.delete(schema.domainEvents).where(or(inArray(schema.domainEvents.requestId, requestIds), sessionIds.length ? inArray(schema.domainEvents.sessionId, sessionIds) : undefined));
       await tx.delete(schema.invitations).where(inArray(schema.invitations.requestId, requestIds));
     }
@@ -186,6 +226,8 @@ try {
       .where(inArray(schema.idempotencyRecords.userId, users))).filter(({ id }) => !originalIdempotencyIds.has(id));
     if (newKeys.length) await tx.delete(schema.idempotencyRecords).where(inArray(schema.idempotencyRecords.id, newKeys.map(({ id }) => id)));
     for (const profile of originalProfiles) await tx.update(schema.userProfiles).set({ trustScore: profile.trustScore }).where(eq(schema.userProfiles.userId, profile.userId));
+    await tx.delete(schema.idempotencyRecords).where(eq(schema.idempotencyRecords.userId, opsId));
+    await tx.delete(schema.users).where(eq(schema.users.id, opsId));
   });
   await connection.close();
 }

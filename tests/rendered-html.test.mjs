@@ -13,15 +13,14 @@ async function render() {
   );
 }
 
-test("server-renders the 碰个面 product shell", async () => {
+test("server-renders the global authentication boundary", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
   assert.match(html, /<title>碰个面｜AI校园活动主理人<\/title>/i);
-  assert.match(html, /今天，遇见同频的人/);
-  assert.match(html, /开始匹配/);
-  assert.match(html, /我的/);
+  assert.match(html, /RESTORING SESSION/);
+  assert.match(html, /正在恢复你的工作台/);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview/i);
 });
 
@@ -140,7 +139,37 @@ test("ships a device-aware mobile calendar import flow", async () => {
 });
 
 test("keeps the Next.js page entry focused on route composition", async () => {
-  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const [page, provider, boundary, p0Panel] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../features/auth/AuthProvider.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../features/auth/AuthBoundary.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/P0MathModelingPanel.tsx", import.meta.url), "utf8"),
+  ]);
   assert.match(page, /PenggemianWorkspace/);
+  assert.match(page, /AuthProvider/);
+  assert.match(page, /AuthBoundary/);
   assert.doesNotMatch(page, /useState|localStorage|InvitationMatch|ActivityRoom/);
+  assert.match(provider, /getMe\(token\)/);
+  assert.match(provider, /AUTH_INVALID_EVENT/);
+  assert.match(boundary, /登录你的校园账号/);
+  assert.match(boundary, /创建碰个面账号/);
+  assert.doesNotMatch(p0Panel, /发起人手机号|current-password|登录、发布/);
+});
+
+test("ships a reusable owner request center for multiple independent requests", async () => {
+  const [workspace, shell, requestCenter, requestLogic] = await Promise.all([
+    readFile(new URL("../features/workspace/PenggemianWorkspace.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../features/workspace/components/WorkspaceShell.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../features/requests/P0RequestCenter.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/p0-requests.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(shell, /view: "requests"/);
+  assert.match(workspace, /<P0RequestCenter/);
+  assert.match(workspace, /onOpenRequests/);
+  assert.match(requestCenter, /getMyRequests/);
+  assert.match(requestCenter, /getCurrentMatching/);
+  assert.match(requestCenter, /runMatching/);
+  assert.match(requestCenter, /cancelPublishedRequest/);
+  assert.match(requestCenter, /searchParams\.set\("request"/);
+  assert.match(requestLogic, /chooseRequestId/);
 });
