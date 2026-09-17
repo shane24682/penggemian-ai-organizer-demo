@@ -1,3 +1,5 @@
+import { AUTH_INVALID_EVENT } from "@/lib/auth-session";
+
 export type RoleCode = "MODELING" | "CODING" | "WRITING" | "OPEN";
 
 type ApiEnvelope<T> = {
@@ -23,6 +25,17 @@ export class ApiRequestError extends Error {
 export type AuthSession = {
   accessToken: string;
   user: { id: string; schoolId: string; role: "USER" | "OPS" | "ADMIN"; displayName: string };
+};
+
+export type AuthUser = AuthSession["user"];
+
+export type RegisterInput = {
+  phoneE164: string;
+  password: string;
+  schoolCode: string;
+  displayName: string;
+  majorCategory: string;
+  gradeYear: number;
 };
 
 export type PublishedRequest = {
@@ -63,7 +76,7 @@ const apiBase = (() => {
   return (env?.VITE_API_BASE_URL || "http://localhost:8788").replace(/\/$/, "");
 })();
 
-const request = async <T>(path: string, init: RequestInit = {}, token?: string): Promise<T> => {
+export const request = async <T>(path: string, init: RequestInit = {}, token?: string): Promise<T> => {
   const response = await fetch(`${apiBase}${path}`, {
     ...init,
     headers: {
@@ -74,6 +87,9 @@ const request = async <T>(path: string, init: RequestInit = {}, token?: string):
   });
   const payload = (await response.json().catch(() => ({}))) as ApiEnvelope<T> & ApiErrorEnvelope;
   if (!response.ok) {
+    if (response.status === 401 && token && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(AUTH_INVALID_EVENT));
+    }
     throw new ApiRequestError(
       payload.error?.message || `请求失败（HTTP ${response.status}）`,
       response.status,
@@ -88,6 +104,14 @@ export const login = (phoneE164: string, password: string) =>
     method: "POST",
     body: JSON.stringify({ phoneE164, password }),
   });
+
+export const register = (input: RegisterInput) =>
+  request<AuthSession>("/api/v1/auth/register", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export const getMe = (token: string) => request<AuthUser>("/api/v1/me", {}, token);
 
 export const publishMathModelingRequest = (
   token: string,

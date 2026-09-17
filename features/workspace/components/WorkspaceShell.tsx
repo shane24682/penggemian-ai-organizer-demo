@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Icon from "@/components/Icon";
+import { useAuth } from "@/features/auth/AuthProvider";
 import type { Coordinate } from "@/lib/location";
 import type { View } from "../types";
 
@@ -22,6 +23,8 @@ const primaryNavigation: Array<{ view: View; icon: "home" | "heart" | "users"; l
 const profileViews: View[] = ["profile", "friendCode", "security", "verification", "tags", "review", "history"];
 
 export default function WorkspaceShell({ view, location, children, onNavigate, onOpenLocation, onSearch, onNotify }: WorkspaceShellProps) {
+  const { user, logout } = useAuth();
+
   return <section className="product-intro app-workspace">
     <div className="workspace-frame">
       <aside className="workspace-rail" aria-label="工作台快捷导航">
@@ -34,7 +37,15 @@ export default function WorkspaceShell({ view, location, children, onNavigate, o
       <div className={`workspace-main view-${view}`}>
         <div className="workspace-top">
           <button className="workspace-location" onClick={onOpenLocation}><Icon name="map-pin" size="sm"/><span>{location.label}<small>仅本机用于距离计算 · 对外模糊显示</small></span></button>
-          <div><button aria-label="搜索活动" onClick={onSearch}><Icon name="search" size="sm"/></button><button aria-label="消息" onClick={() => onNotify("暂无新消息")}><Icon name="bell" size="sm"/></button><b>Y</b></div>
+          <div className="workspace-tools">
+            <button aria-label="搜索活动" onClick={onSearch}><Icon name="search" size="sm"/></button>
+            <button aria-label="消息" onClick={() => onNotify("暂无新消息")}><Icon name="bell" size="sm"/></button>
+            <div className="workspace-account">
+              <span aria-hidden="true">{user?.displayName.slice(0, 1) || "碰"}</span>
+              <div><b>{user?.displayName}</b><small>{user?.role === "USER" ? "校园用户" : user?.role}</small></div>
+              <button type="button" onClick={() => logout()} aria-label="退出当前账号">退出</button>
+            </div>
+          </div>
         </div>
         {children}
       </div>

@@ -124,14 +124,13 @@ main {
   padding: 18px 34px 0;
 }
 
-.workspace-top > div {
+.workspace-tools {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.workspace-top > div > button,
-.workspace-top > div > b {
+.workspace-tools > button {
   display: grid;
   place-items: center;
   width: 34px;
@@ -144,11 +143,36 @@ main {
   padding: 0;
 }
 
-.workspace-top > div > b {
-  border-color: var(--color-deep);
+.workspace-account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  margin-left: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  padding: 3px 5px 3px 3px;
+}
+
+.workspace-account > span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 50%;
   background: var(--color-deep);
   color: var(--color-cream);
+  font-weight: 900;
 }
+
+.workspace-account > div { min-width: 72px; line-height: 1.2; }
+.workspace-account > div b,
+.workspace-account > div small { display: block; }
+.workspace-account > div b { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-body-sm); }
+.workspace-account > div small { margin-top: 2px; color: var(--color-text-muted); font-size: 10px; }
+.workspace-account > button { min-height: 30px; border-radius: 999px; background: var(--color-surface-strong); color: var(--color-deep); padding: 0 10px; font-size: var(--text-caption); font-weight: 800; }
 
 .workspace-location {
   display: flex;
