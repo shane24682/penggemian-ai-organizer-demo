@@ -135,6 +135,8 @@ npm run lint
 
 ## 发布与回滚
 
+B7 一键工程/接口/数据库回归：准备独占隔离 TEST 数据库并 migrate/seed，设置 `B7_ISOLATED_DB=1` 后运行 `npm run test:b7`；安装外部 Playwright/Edge 后运行 `npm run test:b7-browser`。浏览器模式自动启动并关闭本机临时 API/H5，覆盖真实接受、拒绝、超时递补、并发、重复操作、履约和运营回读。报告与截图写入已忽略的 `.artifacts/b7`，失败退出非零并停止后续阶段。完整命令、场景矩阵、失败复现及实体手机验收边界见 `docs/b7-delivery.md`。
+
 - 发布前依次执行 migration、seed（仅非生产环境）、服务端测试和 EdgeOne 构建。
 - migration 按编号向前执行，不在生产库手工删除表或回写旧 migration。
 - 数据库变更前创建备份；需要回滚时先确认旧服务兼容当前 Schema，再回退服务版本。

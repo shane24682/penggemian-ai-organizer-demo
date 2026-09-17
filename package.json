@@ -32,7 +32,10 @@
     "typecheck:h5": "tsc -p tsconfig.h5.json",
     "test:b6": "node --import tsx --test tests/p0-ops.test.ts",
     "test:b6-integration": "node --import tsx --test server/test/ops.integration.test.ts",
-    "test:b6-browser": "node --import tsx tests/b5-browser-smoke.mjs"
+    "test:b6-browser": "node --import tsx tests/b5-browser-smoke.mjs",
+    "test:b7": "node --import tsx scripts/verify-b7.mjs",
+    "test:b7-unit": "node --test tests/b7-runner.test.mjs",
+    "test:b7-browser": "node --import tsx scripts/verify-b7.mjs --browser"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

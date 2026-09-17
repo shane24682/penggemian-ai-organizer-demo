@@ -7,6 +7,7 @@ import { and, eq, inArray, or } from "drizzle-orm";
 
 import { createDatabase } from "../server/src/db/client.ts";
 import { advanceDueSessions } from "../server/src/fulfillment/service.ts";
+import { expirePendingInvitations } from "../server/src/invitations/service.ts";
 import * as schema from "../server/src/db/schema/index.ts";
 
 if (process.env.APP_ENV !== "test" || process.env.B5_TEST_DB_ALLOW_WRITES !== "1" || !process.env.DATABASE_URL) {
@@ -89,6 +90,16 @@ try {
   await card(pageC, second.title).getByRole("button", { name: "接受邀请" }).click();
   await pageD.bringToFront();
   await card(pageD, second.title).getByText("已取消", { exact: true }).waitFor({ timeout: 20_000 });
+  const third = await createRequest(`${titlePrefix} 超时递补`, 120);
+  const [elapsed] = await db.select().from(schema.invitations).where(and(eq(schema.invitations.requestId, third.id), eq(schema.invitations.inviteeUserId, users[1])));
+  const expiryAt = new Date();
+  await db.update(schema.invitations).set({ sentAt: new Date(expiryAt.getTime() - 24 * 3600_000), expiresAt: new Date(expiryAt.getTime() - 1000) }).where(eq(schema.invitations.id, elapsed.id));
+  assert.ok((await expirePendingInvitations(db, expiryAt)).some((row) => row.invitationId === elapsed.id && row.success));
+  assert.equal((await expirePendingInvitations(db, expiryAt)).length, 0);
+  await card(pageB, third.title).getByText("已超时", { exact: true }).waitFor({ timeout: 20_000 });
+  await pageD.bringToFront(); await card(pageD, third.title).getByText("待回应", { exact: true }).waitFor({ timeout: 20_000 });
+  await Promise.all([card(pageD, third.title).getByRole("button", { name: "接受邀请" }).click(), card(pageC, third.title).getByRole("button", { name: "接受邀请" }).click()]);
+  console.log("PASS B7 server timeout → D promotion → C/D simultaneous UI acceptance; repeated expiry scan is safe");
   await tab(pageB, "我的成局");
   await card(pageB, second.title).getByRole("button", { name: "查看成员、签到与复组" }).click();
   await waitText(pageB, "已成局");
