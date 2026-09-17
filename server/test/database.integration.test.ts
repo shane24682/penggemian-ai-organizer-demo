@@ -11,6 +11,7 @@ import { createDatabase } from "../src/db/client.js";
 import {
   checkins,
   costItems,
+  idempotencyRecords,
   requestRoleSlots,
   requests,
   schools,
@@ -36,11 +37,12 @@ after(async () => {
   await connection.close();
 });
 
-const jsonRequest = (body: unknown, token?: string) => ({
+const jsonRequest = (body: unknown, token?: string, idempotencyKey?: string) => ({
   method: "POST",
   headers: {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
   },
   body: JSON.stringify(body),
 });
@@ -77,6 +79,34 @@ const cleanupRequestFormation = async (requestId: string) => {
   }
   await connection.db.delete(matchRuns).where(eq(matchRuns.requestId, requestId));
   await connection.db.update(requests).set({ status: "OPEN", updatedAt: new Date() }).where(eq(requests.id, requestId));
+};
+
+const createRequestBody = (startsAt: Date, title: string) => ({
+  competitionName: "全国大学生数学建模竞赛",
+  title,
+  description: "数据库业务限制集成测试",
+  startsAt: startsAt.toISOString(),
+  endsAt: new Date(startsAt.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+  weeklyHoursRequired: 8,
+  participantLimit: 3,
+  applicationDeadline: new Date(startsAt.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+  sourceChannel: "DIRECT",
+  roleSlots: [
+    { roleCode: "CODING", slotCount: 1, minLevel: 3, evidenceRequired: true },
+    { roleCode: "WRITING", slotCount: 1, minLevel: 3, evidenceRequired: true },
+  ],
+});
+
+const deleteCreatedRequests = async (requestIds: string[], idempotencyKeys: string[]) => {
+  if (requestIds.length) {
+    await connection.db.delete(domainEvents).where(inArray(domainEvents.requestId, requestIds));
+    await connection.db.delete(statusEvents).where(inArray(statusEvents.aggregateId, requestIds));
+    await connection.db.delete(requestRoleSlots).where(inArray(requestRoleSlots.requestId, requestIds));
+    await connection.db.delete(requests).where(inArray(requests.id, requestIds));
+  }
+  if (idempotencyKeys.length) {
+    await connection.db.delete(idempotencyRecords).where(inArray(idempotencyRecords.idempotencyKey, idempotencyKeys));
+  }
 };
 
 test("seed creates the fixed school, users, availability, capabilities and request", async () => {
@@ -129,6 +159,7 @@ test("a real account can publish and reload its request while another user canno
         ],
       },
       tokenA,
+      "integration-create-reload",
     ),
   );
   assert.equal(createResponse.status, 201);
@@ -170,6 +201,9 @@ test("a real account can publish and reload its request while another user canno
     await connection.db.delete(statusEvents).where(eq(statusEvents.aggregateId, requestId));
     await connection.db.delete(requestRoleSlots).where(eq(requestRoleSlots.requestId, requestId));
     await connection.db.delete(requests).where(eq(requests.id, requestId));
+    await connection.db
+      .delete(idempotencyRecords)
+      .where(eq(idempotencyRecords.idempotencyKey, "integration-create-reload"));
   }
 });
 
@@ -190,9 +224,133 @@ test("request validation rejects a participant count that does not match role sl
         roleSlots: [{ roleCode: "CODING", slotCount: 1, minLevel: 3 }],
       },
       tokenA,
+      "integration-invalid-participant-limit",
     ),
   );
   assert.equal(response.status, 400);
+});
+
+test("request creation requires an idempotency key", async () => {
+  const tokenB = await login("+8613800000002");
+  const startsAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+  const response = await app.request(
+    "/api/v1/requests",
+    jsonRequest(createRequestBody(startsAt, "缺少幂等键"), tokenB),
+  );
+  assert.equal(response.status, 400);
+  const payload = (await response.json()) as { error: { code: string } };
+  assert.equal(payload.error.code, "IDEMPOTENCY_KEY_REQUIRED");
+});
+
+test("concurrent retries with one idempotency key create exactly one request", async () => {
+  const tokenB = await login("+8613800000002");
+  const startsAt = new Date(Date.now() + 11 * 24 * 60 * 60 * 1000);
+  const body = createRequestBody(startsAt, "并发幂等需求");
+  const key = "integration-idempotent-create";
+  const requestIds: string[] = [];
+
+  try {
+    const responses = await Promise.all([
+      app.request("/api/v1/requests", jsonRequest(body, tokenB, key)),
+      app.request("/api/v1/requests", jsonRequest(body, tokenB, key)),
+    ]);
+    assert.deepEqual(responses.map(({ status }) => status).sort(), [201, 201]);
+    const payloads = await Promise.all(
+      responses.map((response) => response.json() as Promise<{ data: { id: string } }>),
+    );
+    assert.equal(payloads[0].data.id, payloads[1].data.id);
+    requestIds.push(payloads[0].data.id);
+
+    const [storedCount] = await connection.db
+      .select({ value: count() })
+      .from(requests)
+      .where(eq(requests.id, payloads[0].data.id));
+    assert.equal(storedCount.value, 1);
+
+    const changedBody = { ...body, title: "复用幂等键的另一份需求" };
+    const conflict = await app.request(
+      "/api/v1/requests",
+      jsonRequest(changedBody, tokenB, key),
+    );
+    assert.equal(conflict.status, 409);
+    const conflictPayload = (await conflict.json()) as { error: { code: string } };
+    assert.equal(conflictPayload.error.code, "IDEMPOTENCY_KEY_REUSED");
+  } finally {
+    await deleteCreatedRequests(requestIds, [key]);
+  }
+});
+
+test("active duplicate and overlapping creator requests are rejected", async () => {
+  const tokenC = await login("+8613800000003");
+  const startsAt = new Date(Date.now() + 12 * 24 * 60 * 60 * 1000);
+  const body = createRequestBody(startsAt, "时间边界基准需求");
+  const keys = ["integration-time-base", "integration-time-duplicate", "integration-time-overlap"];
+  const requestIds: string[] = [];
+
+  try {
+    const created = await app.request(
+      "/api/v1/requests",
+      jsonRequest(body, tokenC, keys[0]),
+    );
+    assert.equal(created.status, 201);
+    const createdPayload = (await created.json()) as { data: { id: string } };
+    requestIds.push(createdPayload.data.id);
+
+    const duplicate = await app.request(
+      "/api/v1/requests",
+      jsonRequest(body, tokenC, keys[1]),
+    );
+    assert.equal(duplicate.status, 409);
+    const duplicatePayload = (await duplicate.json()) as { error: { code: string } };
+    assert.equal(duplicatePayload.error.code, "DUPLICATE_ACTIVE_REQUEST");
+
+    const overlappingStart = new Date(startsAt.getTime() + 60 * 60 * 1000);
+    const overlap = await app.request(
+      "/api/v1/requests",
+      jsonRequest(createRequestBody(overlappingStart, "重叠时间需求"), tokenC, keys[2]),
+    );
+    assert.equal(overlap.status, 409);
+    const overlapPayload = (await overlap.json()) as { error: { code: string } };
+    assert.equal(overlapPayload.error.code, "REQUEST_TIME_CONFLICT");
+  } finally {
+    await deleteCreatedRequests(requestIds, keys);
+  }
+});
+
+test("a creator cannot keep more than three active requests", async () => {
+  const tokenD = await login("+8613800000004");
+  const baseTime = Date.now() + 14 * 24 * 60 * 60 * 1000;
+  const keys = [
+    "integration-active-limit-1",
+    "integration-active-limit-2",
+    "integration-active-limit-3",
+    "integration-active-limit-4",
+  ];
+  const requestIds: string[] = [];
+
+  try {
+    for (let index = 0; index < 3; index += 1) {
+      const startsAt = new Date(baseTime + index * 24 * 60 * 60 * 1000);
+      const response = await app.request(
+        "/api/v1/requests",
+        jsonRequest(createRequestBody(startsAt, `活动需求 ${index + 1}`), tokenD, keys[index]),
+      );
+      assert.equal(response.status, 201);
+      const payload = (await response.json()) as { data: { id: string } };
+      requestIds.push(payload.data.id);
+    }
+
+    const fourthStart = new Date(baseTime + 4 * 24 * 60 * 60 * 1000);
+    const fourth = await app.request(
+      "/api/v1/requests",
+      jsonRequest(createRequestBody(fourthStart, "活动需求 4"), tokenD, keys[3]),
+    );
+    assert.equal(fourth.status, 409);
+    const fourthPayload = (await fourth.json()) as { error: { code: string } };
+    assert.equal(fourthPayload.error.code, "ACTIVE_REQUEST_LIMIT_REACHED");
+  } finally {
+    await deleteCreatedRequests(requestIds, keys);
+  }
 });
 
 test("matching reads seeded users and persists a reloadable current run", async () => {

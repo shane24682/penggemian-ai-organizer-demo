@@ -19,3 +19,4 @@ export const createDatabase = (databaseUrl: string, maxConnections = 10) => {
 
 export type DatabaseConnection = ReturnType<typeof createDatabase>;
 export type Database = DatabaseConnection["db"];
+export type DatabaseTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];

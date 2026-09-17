@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -11,11 +11,13 @@ import {
   sessionMembers,
   sessions,
   statusEvents,
+  users,
 } from "../db/schema/index.js";
-import { ApiError } from "../http/errors.js";
+import { ApiError, isPostgresError } from "../http/errors.js";
 import { success } from "../http/responses.js";
 import type { AppEnv } from "../http/types.js";
 import { parseJson } from "../http/validation.js";
+import { requireIdempotencyKey, runIdempotentTransaction } from "../idempotency/service.js";
 import { cancelRequest } from "../requests/service.js";
 
 const roleSlotSchema = z.object({
@@ -60,58 +62,119 @@ const canViewRequest = (
 ) =>
   auth.userId === request.creatorUserId || auth.role === "ADMIN" || (auth.role === "OPS" && auth.schoolId === request.schoolId);
 
+const activeRequestStatuses = ["DRAFT", "OPEN", "MATCHING", "INVITING"] as const;
+const createRequestRouteKey = "POST:/api/v1/requests";
+
 export const createRequestRoutes = (config: AppConfig, db: Database) => {
   const routes = new Hono<AppEnv>();
 
   routes.post("/requests", async (context) => {
     const auth = context.get("auth");
+    const idempotencyKey = requireIdempotencyKey(context.req.header("Idempotency-Key"));
     const input = await parseJson(context, createRequestSchema);
-    const request = await db.transaction(async (tx) => {
-      const [created] = await tx
-        .insert(requests)
-        .values({
-          schoolId: auth.schoolId,
-          creatorUserId: auth.userId,
-          competitionName: input.competitionName,
-          title: input.title,
-          description: input.description,
-          startsAt: input.startsAt,
-          endsAt: input.endsAt,
-          weeklyHoursRequired: input.weeklyHoursRequired,
-          participantLimit: input.participantLimit,
-          applicationDeadline: input.applicationDeadline,
-          sourceChannel: input.sourceChannel,
-          sourceSessionId: input.sourceSessionId,
-          dataScope: config.appEnv === "production" ? "REAL" : "TEST",
-        })
-        .returning();
-      const slots = await tx
-        .insert(requestRoleSlots)
-        .values(input.roleSlots.map((slot) => ({ requestId: created.id, ...slot })))
-        .returning();
-      await tx.insert(statusEvents).values({
-        aggregateType: "REQUEST",
-        aggregateId: created.id,
-        eventType: "REQUEST_OPENED",
-        actorUserId: auth.userId,
-        fromStatus: null,
-        toStatus: "OPEN",
-        idempotencyKey: `request:${created.id}:opened`,
-      });
-      await tx.insert(domainEvents).values({
-        schoolId: created.schoolId,
-        actorUserId: auth.userId,
-        eventType: "REQUEST_OPENED",
-        aggregateType: "REQUEST",
-        aggregateId: created.id,
-        requestId: created.id,
-        dataScope: created.dataScope,
-        payloadJson: { sceneCode: created.sceneCode, sourceChannel: created.sourceChannel },
-        dedupeKey: `request:${created.id}:opened`,
-      });
-      return { ...created, roleSlots: slots };
-    });
-    return success(context, request, 201);
+    try {
+      const outcome = await runIdempotentTransaction(
+        db,
+        {
+          userId: auth.userId,
+          routeKey: createRequestRouteKey,
+          idempotencyKey,
+          request: input,
+        },
+        async (tx) => {
+        await tx.execute(sql`select id from ${users} where ${users.id} = ${auth.userId} for update`);
+
+        const activeRequests = await tx
+          .select({
+            id: requests.id,
+            sceneCode: requests.sceneCode,
+            competitionName: requests.competitionName,
+            startsAt: requests.startsAt,
+            endsAt: requests.endsAt,
+          })
+          .from(requests)
+          .where(
+            and(
+              eq(requests.creatorUserId, auth.userId),
+              inArray(requests.status, activeRequestStatuses),
+              isNull(requests.deletedAt),
+            ),
+          );
+        const duplicate = activeRequests.find(
+          (request) =>
+            request.sceneCode === "MATH_MODELING" &&
+            request.competitionName === input.competitionName &&
+            request.startsAt.getTime() === input.startsAt.getTime() &&
+            request.endsAt.getTime() === input.endsAt.getTime(),
+        );
+        if (duplicate) {
+          throw new ApiError(409, "DUPLICATE_ACTIVE_REQUEST", "相同需求已存在", { requestId: duplicate.id });
+        }
+        const overlap = activeRequests.find(
+          (request) => request.startsAt < input.endsAt && request.endsAt > input.startsAt,
+        );
+        if (overlap) {
+          throw new ApiError(409, "REQUEST_TIME_CONFLICT", "该时间段已有进行中的需求", {
+            requestId: overlap.id,
+          });
+        }
+        if (activeRequests.length >= 3) {
+          throw new ApiError(409, "ACTIVE_REQUEST_LIMIT_REACHED", "同时进行的需求最多为3条");
+        }
+
+        const [created] = await tx
+          .insert(requests)
+          .values({
+            schoolId: auth.schoolId,
+            creatorUserId: auth.userId,
+            competitionName: input.competitionName,
+            title: input.title,
+            description: input.description,
+            startsAt: input.startsAt,
+            endsAt: input.endsAt,
+            weeklyHoursRequired: input.weeklyHoursRequired,
+            participantLimit: input.participantLimit,
+            applicationDeadline: input.applicationDeadline,
+            sourceChannel: input.sourceChannel,
+            sourceSessionId: input.sourceSessionId,
+            dataScope: config.appEnv === "production" ? "REAL" : "TEST",
+          })
+          .returning();
+        const slots = await tx
+          .insert(requestRoleSlots)
+          .values(input.roleSlots.map((slot) => ({ requestId: created.id, ...slot })))
+          .returning();
+        await tx.insert(statusEvents).values({
+          aggregateType: "REQUEST",
+          aggregateId: created.id,
+          eventType: "REQUEST_OPENED",
+          actorUserId: auth.userId,
+          fromStatus: null,
+          toStatus: "OPEN",
+          idempotencyKey: `request:${created.id}:opened`,
+        });
+        await tx.insert(domainEvents).values({
+          schoolId: created.schoolId,
+          actorUserId: auth.userId,
+          eventType: "REQUEST_OPENED",
+          aggregateType: "REQUEST",
+          aggregateId: created.id,
+          requestId: created.id,
+          dataScope: created.dataScope,
+          payloadJson: { sceneCode: created.sceneCode, sourceChannel: created.sourceChannel },
+          dedupeKey: `request:${created.id}:opened`,
+        });
+        const request = { ...created, roleSlots: slots };
+          return { data: request, status: 201 };
+        },
+      );
+      return success(context, outcome.data, outcome.status);
+    } catch (error) {
+      if (isPostgresError(error, "23505")) {
+        throw new ApiError(409, "DUPLICATE_ACTIVE_REQUEST", "相同需求已存在");
+      }
+      throw error;
+    }
   });
 
   routes.get("/me/requests", async (context) => {

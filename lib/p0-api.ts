@@ -132,6 +132,7 @@ export const publishMathModelingRequest = (
     "/api/v1/requests",
     {
       method: "POST",
+      headers: { "Idempotency-Key": crypto.randomUUID() },
       body: JSON.stringify({
         competitionName: "全国大学生数学建模竞赛",
         title: input.title,
