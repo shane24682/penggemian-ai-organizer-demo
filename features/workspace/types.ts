@@ -10,6 +10,7 @@ export type View =
   | "quiz"
   | "friends"
   | "history"
+  | "workflow"
   | "partners"
   | "business"
   | "profile"

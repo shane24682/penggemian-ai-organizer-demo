@@ -9,6 +9,7 @@ import { ApiError } from "../http/errors.js";
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 
 const stableJson = (value: unknown): string => {
+  if (value instanceof Date) return JSON.stringify(value.toISOString());
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
   const object = value as Record<string, unknown>;

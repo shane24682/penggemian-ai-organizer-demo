@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/no-autofocus, jsx-a11y/label-has-associated-control */
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { matchUsers } from "@/lib/matching";
 import type { AudienceMode, OnlinePreferences, ScoredCandidate } from "@/lib/matching";
 import { rankActivitiesForProfile, searchActivities } from "@/lib/discovery";
@@ -15,6 +15,7 @@ import ProfileCenter, { ProfileDestination } from "@/components/ProfileCenter";
 import FriendCodePanel from "@/components/FriendCodePanel";
 import AccountCenter from "@/components/AccountCenter";
 import P0MathModelingPanel from "@/components/P0MathModelingPanel";
+import P0WorkflowPanel from "@/components/P0WorkflowPanel";
 import InvitationMatch from "@/components/InvitationMatch";
 import ActivityRoom from "@/components/ActivityRoom";
 import PostActivity from "@/components/PostActivity";
@@ -219,6 +220,7 @@ const quizQuestions = [
 
 export default function PenggemianWorkspace() {
   const [view, setView] = useState<View>("home");
+  const viewRestored = useRef(false);
   const [step, setStep] = useState<Step>(1);
   const [activity, setActivity] = useState("羽毛球双打");
   const [time, setTime] = useState(defaultActivityTime);
@@ -266,6 +268,8 @@ export default function PenggemianWorkspace() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
+      viewRestored.current = true;
+      if (new URL(window.location.href).searchParams.get("p0") === "1") setView("workflow");
       try {
         setHistory(JSON.parse(localStorage.getItem("penggemian-history") || "[]"));
         setCustomActivities(JSON.parse(localStorage.getItem("penggemian-custom-activities") || "[]"));
@@ -294,6 +298,18 @@ export default function PenggemianWorkspace() {
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!viewRestored.current) return;
+    const url = new URL(window.location.href);
+    if (view === "workflow" || view === "history") {
+      url.searchParams.set("p0", "1");
+      if (view === "history") url.searchParams.set("p0tab", "history");
+    } else {
+      url.searchParams.delete("p0"); url.searchParams.delete("session"); url.searchParams.delete("p0tab");
+    }
+    window.history.replaceState(null, "", url);
+  }, [view]);
 
   const allActivities = useMemo(() => [...customActivities, ...activities, ...onlineActivities, ...studyActivities], [customActivities]);
   const sceneActivityList = useMemo(() => allActivities.filter(item => (item.scene || "offline") === scene), [allActivities, scene]);
@@ -637,10 +653,15 @@ export default function PenggemianWorkspace() {
     <WorkspaceShell
       view={view}
       location={userLocation}
-      onNavigate={setView}
+      onNavigate={(destination) => {
+        const url = new URL(window.location.href);
+        if (destination === "workflow") url.searchParams.set("p0", "1");
+        else { url.searchParams.delete("p0"); url.searchParams.delete("session"); url.searchParams.delete("p0tab"); }
+        window.history.replaceState(null, "", url);
+        setView(destination);
+      }}
       onOpenLocation={() => setShowLocationPicker(true)}
       onSearch={() => { setSearchQuery(""); setView("match"); setStep(1); }}
-      onNotify={notify}
     >
 
           {view === "home" && <HomeView
@@ -675,7 +696,7 @@ export default function PenggemianWorkspace() {
                   <div className="question"><b>活动规则设定</b><p>活动约定</p><div>{["提前4小时可取消","各自AA","较强时间观念，不拖延"].map(x=><button key={x} className={answer===x?"selected":""} onClick={()=>setAnswer(x)}>{x}</button>)}</div></div>
                   <button className="wide-button" onClick={()=>{if(activeScene === "study" && !studyGateReady){notify("竞赛 / 共学项目需先提交至少一项能力材料，并承诺每周 6 小时投入");return}setSelectedVenueId("");setStep(3)}}>{activeScene === "online" ? "按线上偏好计算匹配度并发送邀请" : activity === "数学建模竞赛组队" ? "进入真实发布与数据库匹配" : activeScene === "study" ? "按能力与目标计算匹配度并发送邀请" : "按时间、地点与标签计算匹配度并发送邀请"} <span>{activity === "数学建模竞赛组队" ? "PostgreSQL →" : "不会直接成局 →"}</span></button>
                 </div>}
-                {step===3 && activity === "数学建模竞赛组队" ? <P0MathModelingPanel startsAtValue={time} weeklyHours={weeklyHours} onBack={()=>setStep(2)} onNotify={notify}/> : step===3&&<InvitationMatch key={`${activity}-${time}-${seats}-${audienceMode}-${JSON.stringify(onlinePreferences)}`} matchPlan={matchPlan} scene={activeScene} activity={activity} time={displayTime} seats={seats} level={level} userLocation={userLocation} venues={venueOptions} selectedVenueId={selectedVenueId} aiServiceFee={AI_SERVICE_FEE} onlinePreferences={onlinePreferences} onSelectVenue={setSelectedVenueId} onFormActivity={completeBooking} onNotify={notify}/>}
+                {step===3 && activity === "数学建模竞赛组队" ? <P0MathModelingPanel startsAtValue={time} weeklyHours={weeklyHours} onBack={()=>setStep(2)} onNotify={notify} onOpenWorkflow={() => { const url = new URL(window.location.href); url.searchParams.set("p0", "1"); url.searchParams.set("p0tab", "sessions"); window.history.replaceState(null, "", url); setView("workflow"); }}/> : step===3&&<InvitationMatch key={`${activity}-${time}-${seats}-${audienceMode}-${JSON.stringify(onlinePreferences)}`} matchPlan={matchPlan} scene={activeScene} activity={activity} time={displayTime} seats={seats} level={level} userLocation={userLocation} venues={venueOptions} selectedVenueId={selectedVenueId} aiServiceFee={AI_SERVICE_FEE} onlinePreferences={onlinePreferences} onSelectVenue={setSelectedVenueId} onFormActivity={completeBooking} onNotify={notify}/>}
                 {step===4&&<ActivityRoom activity={activity} scene={activeScene} time={displayTime} seats={seats} aiServiceFee={AI_SERVICE_FEE} onlinePreferences={onlinePreferences} selectedVenue={activeScene === "offline" ? selectedVenue : undefined} venues={venueOptions} participants={roomParticipants.length ? roomParticipants : matchPlan.selected} onSelectVenue={setSelectedVenueId} onAddMobileCalendar={addMobileCalendar} onEndActivity={finishActivity} onNotify={notify}/>}
               </div>
             </div>
@@ -698,7 +719,8 @@ export default function PenggemianWorkspace() {
 
           {view === "business" && <BusinessView onNotify={notify}/>}
 
-          {view === "history" && <HistoryView records={history} onOpenActivity={openMatch}/>}
+          {view === "workflow" && <P0WorkflowPanel/>}
+          {view === "history" && <><P0WorkflowPanel initialTab="history"/><details><summary>非 P0 展示记录（仅本机，不进入真实业务指标）</summary><HistoryView records={history.filter((record) => record.activity !== "数学建模竞赛组队")} onOpenActivity={openMatch}/></details></>}
 
           {view === "profile" && <ProfileCenter verificationStatus={verificationStatus} tagCount={personalTags.length} activityCount={history.length} onNavigate={navigateProfile}/>}
 

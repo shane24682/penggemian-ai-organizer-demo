@@ -9,15 +9,15 @@ import {
   runMatching,
   type PersistedMatchRun,
 } from "@/lib/p0-api";
+import { P0_TOKEN_KEY } from "@/lib/p0-workflow";
 
 type Props = {
   startsAtValue: string;
   weeklyHours: number;
   onBack: () => void;
   onNotify: (message: string) => void;
+  onOpenWorkflow: () => void;
 };
-
-const TOKEN_KEY = "penggemian-p0-access-token";
 
 const roleName = (candidate: PersistedMatchRun["candidates"][number]) => {
   const roleReason = candidate.breakdown.find((item) => item.key === "role")?.detail || "能力符合角色要求";
@@ -27,7 +27,7 @@ const roleName = (candidate: PersistedMatchRun["candidates"][number]) => {
   return "灵活补位";
 };
 
-export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack, onNotify }: Props) {
+export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack, onNotify, onOpenWorkflow }: Props) {
   const [phone, setPhone] = useState("+8613800000001");
   const [password, setPassword] = useState("");
   const [phase, setPhase] = useState<"idle" | "working" | "done">("idle");
@@ -46,7 +46,7 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
       }
       const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
       const session = await login(phone.trim(), password);
-      localStorage.setItem(TOKEN_KEY, session.accessToken);
+      localStorage.setItem(P0_TOKEN_KEY, session.accessToken);
       const published = await publishMathModelingRequest(session.accessToken, {
         title: "数模队伍招募编程与写作成员",
         startsAt,
@@ -100,7 +100,7 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
         </article>)}
         {!matchRun.candidates.length && <div className="p0-empty">需求已保存，但当前没有通过硬门槛的候选人。可调整启动会时间或每周投入后重新发布。</div>}
       </div>
-      <div className="p0-handoff"><b>下一步：邀请服务</b><p>候选结果已经是真实共享数据；邀请、接受/拒绝、候补递补和成局由另一位同学的服务接入，这里不模拟对方回应。</p></div>
+      <div className="p0-handoff"><b>下一步：真实邀请与成局</b><p>主选邀请和候补队列已由服务端持久化。对方在“数模活动”登录自己的账号即可回应，不模拟他人操作。</p><button onClick={onOpenWorkflow}>进入数模活动工作台 →</button></div>
       <button className="wide-button secondary" onClick={() => { setPhase("idle"); setMatchRun(null); setRequestId(""); }}>再发布一条需求<span>→</span></button>
     </>}
     <button className="p0-back" onClick={onBack}>← 返回修改组队条件</button>

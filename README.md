@@ -14,6 +14,8 @@
 - P0 数学建模需求发布、数据库候选筛选、可解释排序和匹配结果持久化
 - P0 真实邀请、接受/拒绝/超时、候补递补、满员成局和成员状态查询
 - P0 邀请响应幂等、最后名额并发保护、站内通知 outbox 与三次有限重试
+- P0 成员签到、活动开始/完成结算、缺席记录与履约信用、私人评价和双向复组需求
+- P0 数模活动工作台：真实邀请、候补进度、成局详情、签到、评价、复组、活动历史和站内通知，支持刷新恢复及跨账号隔离
 
 ## 本地运行
 
@@ -54,6 +56,7 @@ npm run build:edgeone
 ```bash
 npm run job:expire-invitations
 npm run job:deliver-notifications
+npm run job:advance-sessions
 ```
 
 B2/B3 API 包括：`GET /api/v1/me/invitations`、
@@ -63,6 +66,43 @@ B2/B3 API 包括：`GET /api/v1/me/invitations`、
 `GET /api/v1/me/notifications` 和 `POST /api/v1/me/notifications/:notificationId/read`。
 
 邀请接受/拒绝必须携带最长 128 字符的 `Idempotency-Key` 请求头。相同用户、接口、幂等键和请求体会返回第一次结果并设置 `Idempotency-Replayed: true`；相同幂等键用于不同请求体返回 `409 IDEMPOTENCY_KEY_REUSED`。邀请默认 24 小时有效，但不会晚于需求的报名截止时间。
+
+B4 履约 API（全部位于 `/api/v1/sessions/:sessionId`）：
+
+- `GET /checkins`：签到资格、开放/截止/迟到时间和签到汇总。
+- `POST /checkins`：请求体 `{}`，服务端确定用户、时间和签到结果。
+- `POST /reviews`：`{ revieweeUserId, rating, tags?, comment? }`；`GET /reviews` 只读取本人提交的评价。
+- `POST /regroup-intents`：`{ willingUserIds }`；`GET /regroup-intents` 只读取本人的选择、状态及双方互选的成员 ID。
+- `POST /regroup`：`{ startsAt, endsAt, applicationDeadline }`，双方有意愿后创建 `source_session_id` 关联的新需求；不会自动确认成员。
+
+以上 POST 接口均要求 JSON 和 `Idempotency-Key`。签到窗口暂定开始前 30 分钟至结束前，开始后超过 15 分钟记为迟到（契约未指定分钟数，集中于 `server/src/fulfillment/rules.ts`）。评价、复组仅允许已完成活动的已到场成员。结算任务将签到成员记为 `COMPLETED`，未签到的确认成员记为 `NO_SHOW`/`ABSENT`；退出和取消不产生缺席扣分。签到信用 +2、缺席 -10，限制在 0～100，并写入审计事件；评价不影响信用或匹配分数。
+
+完成迁移和 seed 后可单独验收 B4：
+
+```bash
+npm run test:b4
+npm run test:b4-integration
+```
+
+完整交付映射与未冻结规则见 `docs/b4-delivery.md`。
+
+## B5 H5 真实业务工作台
+
+点击导航“数模活动”，或打开 `/?p0=1`，登录自己的账号即可回应真实邀请。候补账号在“候补进度”查看排队/递补/终态；已接受成员在“我的成局”进入签到、私人评价和双向复组。历史读取服务端已完成/已取消活动；“我的需求”可回读持久化匹配结果及触发新复组需求的匹配。刷新后重新验证 `/me` 并回读业务状态；URL 只记录选中的页面和活动 ID，浏览器不缓存业务事实。
+
+前台每 5 秒轮询，后台每 60 秒，重新激活立即查询。签到及活动完成仍依赖服务端时间和结算任务，不提供模拟签到时间或替他人响应的页面按钮。
+
+```bash
+npm run typecheck:h5
+npm run test:b5
+npm run test:b1-schema
+npm run test:b3-schema
+npm run test
+```
+
+双手机联调必须在构建前把 `VITE_API_BASE_URL` 设置为两台手机可访问的 HTTPS 业务服务地址，并配置 `CORS_ORIGIN` 为 H5 来源；手机上的 `localhost` 指向手机自己。生产可设置 `VITE_API_BASE_URL=/` 并通过同域网关把 `/api/v1` 转发到业务服务。迁移和 seed 沿用统一流程，B5 不新增 migration。
+
+隔离数据库浏览器冒烟命令、六项交付映射和验证边界见 `docs/b5-delivery.md`。
 
 ## 交接说明
 

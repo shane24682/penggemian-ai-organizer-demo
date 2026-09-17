@@ -26,3 +26,14 @@ test("idempotency key is required and bounded", () => {
   );
   assert.equal(requireIdempotencyKey(" request-1 "), "request-1");
 });
+
+test("parsed regroup dates contribute to the idempotency request hash", () => {
+  assert.notEqual(
+    hashIdempotencyRequest({ startsAt: new Date("2026-09-20T10:00:00Z") }),
+    hashIdempotencyRequest({ startsAt: new Date("2026-09-21T10:00:00Z") }),
+  );
+  assert.equal(
+    hashIdempotencyRequest({ startsAt: new Date("2026-09-20T10:00:00Z") }),
+    hashIdempotencyRequest({ startsAt: "2026-09-20T10:00:00.000Z" }),
+  );
+});

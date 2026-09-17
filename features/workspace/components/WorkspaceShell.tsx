@@ -10,18 +10,18 @@ type WorkspaceShellProps = {
   onNavigate: (view: View) => void;
   onOpenLocation: () => void;
   onSearch: () => void;
-  onNotify: (message: string) => void;
 };
 
 const primaryNavigation: Array<{ view: View; icon: "home" | "heart" | "users"; label: string }> = [
   { view: "home", icon: "home", label: "发现" },
   { view: "match", icon: "heart", label: "匹配" },
+  { view: "workflow", icon: "users", label: "数模活动" },
   { view: "friends", icon: "users", label: "好友" },
 ];
 
 const profileViews: View[] = ["profile", "friendCode", "security", "verification", "tags", "review", "history"];
 
-export default function WorkspaceShell({ view, location, children, onNavigate, onOpenLocation, onSearch, onNotify }: WorkspaceShellProps) {
+export default function WorkspaceShell({ view, location, children, onNavigate, onOpenLocation, onSearch }: WorkspaceShellProps) {
   return <section className="product-intro app-workspace">
     <div className="workspace-frame">
       <aside className="workspace-rail" aria-label="工作台快捷导航">
@@ -34,7 +34,7 @@ export default function WorkspaceShell({ view, location, children, onNavigate, o
       <div className={`workspace-main view-${view}`}>
         <div className="workspace-top">
           <button className="workspace-location" onClick={onOpenLocation}><Icon name="map-pin" size="sm"/><span>{location.label}<small>仅本机用于距离计算 · 对外模糊显示</small></span></button>
-          <div><button aria-label="搜索活动" onClick={onSearch}><Icon name="search" size="sm"/></button><button aria-label="消息" onClick={() => onNotify("暂无新消息")}><Icon name="bell" size="sm"/></button><b>Y</b></div>
+          <div><button aria-label="搜索活动" onClick={onSearch}><Icon name="search" size="sm"/></button><button aria-label="消息" onClick={() => onNavigate("workflow")}><Icon name="bell" size="sm"/></button><b>Y</b></div>
         </div>
         {children}
       </div>

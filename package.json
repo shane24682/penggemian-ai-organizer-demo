@@ -22,7 +22,13 @@
     "db:migrate": "tsx server/src/db/migrate.ts",
     "db:seed": "tsx server/src/db/seed.ts",
     "job:expire-invitations": "tsx server/src/jobs/expire-invitations.ts",
-    "job:deliver-notifications": "tsx server/src/jobs/deliver-notifications.ts"
+    "job:deliver-notifications": "tsx server/src/jobs/deliver-notifications.ts",
+    "job:advance-sessions": "tsx server/src/jobs/advance-sessions.ts",
+    "test:b4": "node --import tsx --test server/test/fulfillment-rules.test.ts",
+    "test:b4-integration": "node --import tsx --test server/test/fulfillment.integration.test.ts",
+    "test:b5": "node --import tsx --test tests/p0-workflow.test.ts",
+    "test:b5-browser": "node --import tsx tests/b5-browser-smoke.mjs",
+    "typecheck:h5": "tsc -p tsconfig.h5.json"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

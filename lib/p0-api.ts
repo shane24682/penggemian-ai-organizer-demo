@@ -49,23 +49,41 @@ export type PersistedMatchRun = {
 
 const apiBase = (() => {
   const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
-  return (env?.VITE_API_BASE_URL || "http://localhost:8788").replace(/\/$/, "");
+  return (env?.VITE_API_BASE_URL || "http://localhost:8787").replace(/\/$/, "");
 })();
 
-const request = async <T>(path: string, init: RequestInit = {}, token?: string): Promise<T> => {
-  const response = await fetch(`${apiBase}${path}`, {
-    ...init,
-    headers: {
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init.headers,
-    },
-  });
-  const payload = (await response.json().catch(() => ({}))) as ApiEnvelope<T> & ApiErrorEnvelope;
-  if (!response.ok) {
-    throw new Error(payload.error?.message || `请求失败（HTTP ${response.status}）`);
+export class P0ApiError extends Error {
+  constructor(message: string, public status: number, public code: string, public requestId?: string) {
+    super(message);
+    this.name = "P0ApiError";
   }
-  return payload.data;
+}
+
+export const request = async <T>(path: string, init: RequestInit = {}, token?: string): Promise<T> => {
+  const headers = new Headers(init.headers);
+  if (init.body) headers.set("Content-Type", "application/json");
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const controller = new AbortController();
+  const forwardAbort = () => controller.abort();
+  if (init.signal?.aborted) controller.abort();
+  init.signal?.addEventListener("abort", forwardAbort, { once: true });
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const response = await fetch(`${apiBase}${path}`, { ...init, headers, signal: controller.signal, cache: "no-store" });
+    const raw: unknown = await response.json().catch(() => ({}));
+    const payload = (raw && typeof raw === "object" ? raw : {}) as ApiEnvelope<T> & ApiErrorEnvelope;
+    if (!response.ok) {
+      throw new P0ApiError(payload.error?.message || `请求失败（HTTP ${response.status}）`,
+        response.status, payload.error?.code || "HTTP_ERROR", payload.meta?.requestId);
+    }
+    if (!("data" in payload)) throw new P0ApiError("服务返回格式错误，请稍后重试", 502, "INVALID_API_RESPONSE");
+    return payload.data;
+  } catch (error) {
+    if (error instanceof P0ApiError || init.signal?.aborted) throw error;
+    throw new P0ApiError(controller.signal.aborted ? "请求超时，结果尚未确认，请重试" : "无法连接业务服务，请检查网络与服务地址", 0, controller.signal.aborted ? "NETWORK_TIMEOUT" : "NETWORK_ERROR");
+  } finally {
+    clearTimeout(timeout); init.signal?.removeEventListener("abort", forwardAbort);
+  }
 };
 
 export const login = (phoneE164: string, password: string) =>
@@ -109,7 +127,7 @@ export const publishMathModelingRequest = (
 export const runMatching = (token: string, requestId: string) =>
   request<{ runId: string; readyForInvitationDispatch: boolean }>(
     `/api/v1/requests/${requestId}/match`,
-    { method: "POST" },
+    { method: "POST", body: "{}" },
     token,
   );
 

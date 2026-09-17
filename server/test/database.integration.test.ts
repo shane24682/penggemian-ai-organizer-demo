@@ -589,7 +589,9 @@ test("re-running notification delivery sends one in-app notification and support
     const sender = async () => {
       sendCount += 1;
     };
-    const firstRun = await processNotificationOutbox(connection.db, sender, target.availableAt);
+    // PostgreSQL defaults retain microseconds; JS Date truncates to milliseconds.
+    const deliveryAt = new Date(target.availableAt.getTime() + 1);
+    const firstRun = await processNotificationOutbox(connection.db, sender, deliveryAt);
     const repeatedRun = await processNotificationOutbox(connection.db, sender, new Date(target.availableAt.getTime() + 60_000));
     assert.deepEqual(firstRun, [{ outboxId: target.id, status: "SENT" }]);
     assert.deepEqual(repeatedRun, []);
