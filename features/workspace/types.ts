@@ -6,6 +6,7 @@ export type Step = 1 | 2 | 3 | 4;
 export type View =
   | "home"
   | "match"
+  | "requests"
   | "plaza"
   | "quiz"
   | "friends"

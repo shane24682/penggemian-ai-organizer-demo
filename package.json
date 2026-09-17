@@ -11,6 +11,7 @@
     "build:edgeone": "vite build --config vite.edgeone.config.ts",
     "start": "vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test:p0-requests": "node --import tsx --test tests/p0-requests.test.ts",
     "test:server": "node --import tsx --test server/test/*.test.ts",
     "test:b1-schema": "node --import tsx --test tests/b1-schema.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",

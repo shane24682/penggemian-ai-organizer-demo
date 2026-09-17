@@ -155,3 +155,21 @@ test("keeps the Next.js page entry focused on route composition", async () => {
   assert.match(boundary, /创建碰个面账号/);
   assert.doesNotMatch(p0Panel, /发起人手机号|current-password|登录、发布/);
 });
+
+test("ships a reusable owner request center for multiple independent requests", async () => {
+  const [workspace, shell, requestCenter, requestLogic] = await Promise.all([
+    readFile(new URL("../features/workspace/PenggemianWorkspace.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../features/workspace/components/WorkspaceShell.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../features/requests/P0RequestCenter.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/p0-requests.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(shell, /view: "requests"/);
+  assert.match(workspace, /<P0RequestCenter/);
+  assert.match(workspace, /onOpenRequests/);
+  assert.match(requestCenter, /getMyRequests/);
+  assert.match(requestCenter, /getCurrentMatching/);
+  assert.match(requestCenter, /runMatching/);
+  assert.match(requestCenter, /cancelPublishedRequest/);
+  assert.match(requestCenter, /searchParams\.set\("request"/);
+  assert.match(requestLogic, /chooseRequestId/);
+});

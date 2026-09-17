@@ -17,6 +17,7 @@ type Props = {
   startsAtValue: string;
   weeklyHours: number;
   onBack: () => void;
+  onOpenRequests: () => void;
   onNotify: (message: string) => void;
 };
 
@@ -28,7 +29,7 @@ const roleName = (candidate: PersistedMatchRun["candidates"][number]) => {
   return "灵活补位";
 };
 
-export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack, onNotify }: Props) {
+export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack, onOpenRequests, onNotify }: Props) {
   const { accessToken, user, logout } = useAuth();
   const [phase, setPhase] = useState<"idle" | "restoring" | "working" | "done">("restoring");
   const [error, setError] = useState("");
@@ -169,6 +170,7 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
       </div>
       <div className="p0-handoff"><b>邀请已发送</b><p>主选将先收到邀请；拒绝或超时后，候补会依次递补。</p></div>
       {!["CANCELLED", "FULFILLED", "EXPIRED"].includes(requestStatus) && <button className="wide-button secondary" onClick={() => void cancelCurrent()}>取消当前需求<span>×</span></button>}
+      <button className="wide-button secondary" onClick={onOpenRequests}>查看我的需求<span>→</span></button>
       <button className="wide-button secondary" onClick={() => { setPhase("idle"); setMatchRun(null); setRequestId(""); setRequestStatus(""); }}>再发布一条需求<span>→</span></button>
     </>}
     <button className="p0-back" onClick={onBack}>← 返回修改组队条件</button>

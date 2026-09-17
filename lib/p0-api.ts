@@ -40,11 +40,17 @@ export type RegisterInput = {
 
 export type PublishedRequest = {
   id: string;
+  sceneCode: "MATH_MODELING";
   competitionName: string;
   title: string;
+  description: string | null;
   startsAt: string;
   endsAt: string;
-  status: string;
+  weeklyHoursRequired: number;
+  participantLimit: number;
+  applicationDeadline: string;
+  status: "DRAFT" | "OPEN" | "MATCHING" | "INVITING" | "FULFILLED" | "CANCELLED" | "EXPIRED";
+  createdAt: string;
 };
 
 export type PersistedMatchCandidate = {

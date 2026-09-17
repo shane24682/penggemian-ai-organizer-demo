@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import Icon from "@/components/Icon";
+import Icon, { type IconName } from "@/components/Icon";
 import { useAuth } from "@/features/auth/AuthProvider";
 import type { Coordinate } from "@/lib/location";
 import type { View } from "../types";
@@ -14,9 +14,10 @@ type WorkspaceShellProps = {
   onNotify: (message: string) => void;
 };
 
-const primaryNavigation: Array<{ view: View; icon: "home" | "heart" | "users"; label: string }> = [
+const primaryNavigation: Array<{ view: View; icon: IconName; label: string }> = [
   { view: "home", icon: "home", label: "发现" },
   { view: "match", icon: "heart", label: "匹配" },
+  { view: "requests", icon: "calendar", label: "需求" },
   { view: "friends", icon: "users", label: "好友" },
 ];
 
