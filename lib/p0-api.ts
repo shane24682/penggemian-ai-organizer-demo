@@ -1,4 +1,4 @@
-import { AUTH_INVALID_EVENT } from "@/lib/auth-session";
+import { AUTH_INVALID_EVENT } from "./auth-session";
 
 export type RoleCode = "MODELING" | "CODING" | "WRITING" | "OPEN";
 
@@ -16,6 +16,7 @@ export class ApiRequestError extends Error {
     message: string,
     readonly status: number,
     readonly code?: string,
+    readonly requestId?: string,
   ) {
     super(message);
     this.name = "ApiRequestError";
@@ -79,30 +80,38 @@ export type PersistedMatchRun = {
 
 const apiBase = (() => {
   const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
-  return (env?.VITE_API_BASE_URL || "http://localhost:8788").replace(/\/$/, "");
+  return (env?.VITE_API_BASE_URL || "http://localhost:8787").replace(/\/$/, "");
 })();
 
+export { ApiRequestError as P0ApiError };
+
 export const request = async <T>(path: string, init: RequestInit = {}, token?: string): Promise<T> => {
-  const response = await fetch(`${apiBase}${path}`, {
-    ...init,
-    headers: {
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init.headers,
-    },
-  });
-  const payload = (await response.json().catch(() => ({}))) as ApiEnvelope<T> & ApiErrorEnvelope;
-  if (!response.ok) {
-    if (response.status === 401 && token && typeof window !== "undefined") {
-      window.dispatchEvent(new Event(AUTH_INVALID_EVENT));
+  const headers = new Headers(init.headers);
+  if (init.body) headers.set("Content-Type", "application/json");
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const controller = new AbortController();
+  const forwardAbort = () => controller.abort();
+  if (init.signal?.aborted) controller.abort();
+  init.signal?.addEventListener("abort", forwardAbort, { once: true });
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const response = await fetch(`${apiBase}${path}`, { ...init, headers, signal: controller.signal, cache: "no-store" });
+    const raw: unknown = await response.json().catch(() => ({}));
+    const payload = (raw && typeof raw === "object" ? raw : {}) as ApiEnvelope<T> & ApiErrorEnvelope;
+    if (!response.ok) {
+      if (response.status === 401 && token && typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_INVALID_EVENT));
+      throw new ApiRequestError(payload.error?.message || `请求失败（HTTP ${response.status}）`,
+        response.status, payload.error?.code || "HTTP_ERROR", payload.meta?.requestId);
     }
-    throw new ApiRequestError(
-      payload.error?.message || `请求失败（HTTP ${response.status}）`,
-      response.status,
-      payload.error?.code,
-    );
+    if (!("data" in payload)) throw new ApiRequestError("服务返回格式错误，请稍后重试", 502, "INVALID_API_RESPONSE");
+    return payload.data;
+  } catch (error) {
+    if (error instanceof ApiRequestError || init.signal?.aborted) throw error;
+    throw new ApiRequestError(controller.signal.aborted ? "请求超时，结果尚未确认，请重试" : "无法连接业务服务，请检查网络与服务地址", 0, controller.signal.aborted ? "NETWORK_TIMEOUT" : "NETWORK_ERROR");
+  } finally {
+    clearTimeout(timeout); init.signal?.removeEventListener("abort", forwardAbort);
+
   }
-  return payload.data;
 };
 
 export const login = (phoneE164: string, password: string) =>
@@ -155,7 +164,7 @@ export const publishMathModelingRequest = (
 export const runMatching = (token: string, requestId: string) =>
   request<{ runId: string; readyForInvitationDispatch: boolean }>(
     `/api/v1/requests/${requestId}/match`,
-    { method: "POST" },
+    { method: "POST", body: "{}" },
     token,
   );
 

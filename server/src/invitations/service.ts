@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, lte, sql } from "drizzle-orm";
 
-import type { Database } from "../db/client.js";
+import type { Database, DatabaseTransaction } from "../db/client.js";
 import {
   domainEvents,
   invitations,
@@ -15,14 +15,15 @@ import {
 } from "../db/schema/index.js";
 import { ApiError } from "../http/errors.js";
 import type { AuthUser } from "../http/types.js";
+import { assertNotificationPayloadSafe } from "../notifications/service.js";
 import {
   decideInvitationTransition,
   isSessionFulfilled,
   type InvitationAction,
 } from "./state-machine.js";
 
-const INVITATION_TTL_MS = 6 * 60 * 60 * 1000;
-type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+const INVITATION_TTL_MS = 24 * 60 * 60 * 1000;
+type Transaction = DatabaseTransaction;
 
 export type DispatchCandidate = {
   id: string;
@@ -38,8 +39,16 @@ export type DispatchRequest = {
   schoolId: string;
   startsAt: Date;
   endsAt: Date;
+  applicationDeadline: Date;
   participantLimit: number;
   dataScope: "REAL" | "TEST" | "DEMO";
+};
+
+const invitationExpiresAt = (request: Pick<DispatchRequest, "applicationDeadline">, now: Date) => {
+  if (request.applicationDeadline <= now) {
+    throw new ApiError(409, "APPLICATION_DEADLINE_PASSED", "报名截止时间已过，不能发送邀请");
+  }
+  return new Date(Math.min(now.getTime() + INVITATION_TTL_MS, request.applicationDeadline.getTime()));
 };
 
 const statusEvent = (
@@ -88,22 +97,25 @@ const domainEvent = (
 const queueInvitationNotification = (
   tx: Transaction,
   invitation: { id: string; inviteeUserId: string; requestId: string; sessionId: string },
-) =>
-  tx
+) => {
+  const payloadJson = {
+    invitationId: invitation.id,
+    requestId: invitation.requestId,
+    sessionId: invitation.sessionId,
+  };
+  assertNotificationPayloadSafe(payloadJson);
+  return tx
     .insert(notificationOutbox)
     .values({
       recipientUserId: invitation.inviteeUserId,
       templateCode: "TEAM_INVITATION_PENDING",
       aggregateType: "INVITATION",
       aggregateId: invitation.id,
-      payloadJson: {
-        invitationId: invitation.id,
-        requestId: invitation.requestId,
-        sessionId: invitation.sessionId,
-      },
+      payloadJson,
       idempotencyKey: `invitation:${invitation.id}:pending`,
     })
     .onConflictDoNothing();
+};
 
 const cancelActiveInvitations = async (
   tx: Transaction,
@@ -198,7 +210,7 @@ export const dispatchMatchInvitations = async (
         status: candidate.candidateType === "PRIMARY" ? ("PENDING" as const) : ("QUEUED" as const),
         queuePosition: candidate.rank,
         sentAt: candidate.candidateType === "PRIMARY" ? now : null,
-        expiresAt: candidate.candidateType === "PRIMARY" ? new Date(now.getTime() + INVITATION_TTL_MS) : null,
+        expiresAt: candidate.candidateType === "PRIMARY" ? invitationExpiresAt(request, now) : null,
       })),
     )
     .returning();
@@ -285,7 +297,7 @@ const promoteNextBackup = async (
     .set({
       status: "PENDING",
       sentAt: now,
-      expiresAt: new Date(now.getTime() + INVITATION_TTL_MS),
+      expiresAt: invitationExpiresAt(request, now),
       updatedAt: now,
     })
     .where(and(eq(invitations.id, next.id), eq(invitations.status, "QUEUED")))
@@ -348,10 +360,21 @@ const transitionInvitation = async (
   actorUserId: string | null,
   now: Date,
 ) => {
+  const [invitationSnapshot] = await tx
+    .select({ sessionId: invitations.sessionId })
+    .from(invitations)
+    .where(eq(invitations.id, invitationId))
+    .limit(1);
+  if (!invitationSnapshot) return { outcome: "NOT_FOUND" as const };
+
+  // Every invitation response for a session takes locks in the same order. This
+  // serializes competing accepts before either transaction can cancel the
+  // other's invitation, avoiding both overfill and a cross-invitation deadlock.
+  await tx.execute(sql`select id from sessions where id = ${invitationSnapshot.sessionId} for update`);
   await tx.execute(sql`select id from invitations where id = ${invitationId} for update`);
   const [invitation] = await tx.select().from(invitations).where(eq(invitations.id, invitationId)).limit(1);
   if (!invitation) return { outcome: "NOT_FOUND" as const };
-  await tx.execute(sql`select id from sessions where id = ${invitation.sessionId} for update`);
+  await tx.execute(sql`select id from request_role_slots where id = ${invitation.roleSlotId} for update`);
 
   const [request] = await tx
     .select({
@@ -360,6 +383,7 @@ const transitionInvitation = async (
       schoolId: requests.schoolId,
       startsAt: requests.startsAt,
       endsAt: requests.endsAt,
+      applicationDeadline: requests.applicationDeadline,
       participantLimit: requests.participantLimit,
       dataScope: requests.dataScope,
     })
@@ -529,27 +553,34 @@ const transitionInvitation = async (
   return { outcome: "OK" as const, invitation: accepted, promotedInvitationId: null, sessionConfirmed };
 };
 
-export const respondToInvitation = async (
-  db: Database,
+export const respondToInvitationInTransaction = async (
+  tx: DatabaseTransaction,
   invitationId: string,
   userId: string,
   action: "ACCEPT" | "DECLINE",
   now = new Date(),
 ) => {
-  const result = await db.transaction(async (tx) => {
-    const [visible] = await tx
-      .select({ inviteeUserId: invitations.inviteeUserId })
-      .from(invitations)
-      .where(eq(invitations.id, invitationId));
-    if (!visible || visible.inviteeUserId !== userId) return { outcome: "NOT_FOUND" as const };
-    return transitionInvitation(tx, invitationId, action, userId, now);
-  });
+  const [visible] = await tx
+    .select({ inviteeUserId: invitations.inviteeUserId })
+    .from(invitations)
+    .where(eq(invitations.id, invitationId));
+  const result = !visible || visible.inviteeUserId !== userId
+    ? { outcome: "NOT_FOUND" as const }
+    : await transitionInvitation(tx, invitationId, action, userId, now);
   if (result.outcome === "NOT_FOUND") throw new ApiError(404, "INVITATION_NOT_FOUND", "邀请不存在");
   if (result.outcome === "CONFLICT") throw result.error;
   if (result.outcome === "RETRY") throw new ApiError(409, "INVITATION_CHANGED", "邀请状态已变化，请刷新后重试");
   if (result.outcome === "EXPIRED") throw new ApiError(409, "INVITATION_EXPIRED", "邀请已过期");
   return result;
 };
+
+export const respondToInvitation = (
+  db: Database,
+  invitationId: string,
+  userId: string,
+  action: "ACCEPT" | "DECLINE",
+  now = new Date(),
+) => db.transaction((tx) => respondToInvitationInTransaction(tx, invitationId, userId, action, now));
 
 export const expirePendingInvitations = async (db: Database, now = new Date()) => {
   const expired = await db

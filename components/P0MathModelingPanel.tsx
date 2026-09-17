@@ -13,12 +13,14 @@ import {
 } from "@/lib/p0-api";
 import { useAuth } from "@/features/auth/AuthProvider";
 
+
 type Props = {
   startsAtValue: string;
   weeklyHours: number;
   onBack: () => void;
   onOpenRequests: () => void;
   onNotify: (message: string) => void;
+  onOpenWorkflow: () => void;
 };
 
 const roleName = (candidate: PersistedMatchRun["candidates"][number]) => {
@@ -29,9 +31,10 @@ const roleName = (candidate: PersistedMatchRun["candidates"][number]) => {
   return "灵活补位";
 };
 
-export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack, onOpenRequests, onNotify }: Props) {
+export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack, onOpenRequests, onNotify, onOpenWorkflow }: Props) {
   const { accessToken, user, logout } = useAuth();
   const [phase, setPhase] = useState<"idle" | "restoring" | "working" | "done">("restoring");
+
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState("");
   const [requestStatus, setRequestStatus] = useState("");
@@ -106,6 +109,7 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
       }
       const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
       const published = await publishMathModelingRequest(accessToken, {
+
         title: "数模队伍招募编程与写作成员",
         startsAt,
         endsAt,
@@ -168,10 +172,11 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
         </article>)}
         {!matchRun.candidates.length && <div className="p0-empty">需求已保存，但当前没有通过硬门槛的候选人。可调整启动会时间或每周投入后重新发布。</div>}
       </div>
-      <div className="p0-handoff"><b>邀请已发送</b><p>主选将先收到邀请；拒绝或超时后，候补会依次递补。</p></div>
+      <div className="p0-handoff"><b>下一步：真实邀请与成局</b><p>主选邀请和候补队列已由服务端持久化。对方在“数模活动”登录自己的账号即可回应，不模拟他人操作。</p><button onClick={onOpenWorkflow}>进入数模活动工作台 →</button></div>
       {!["CANCELLED", "FULFILLED", "EXPIRED"].includes(requestStatus) && <button className="wide-button secondary" onClick={() => void cancelCurrent()}>取消当前需求<span>×</span></button>}
       <button className="wide-button secondary" onClick={onOpenRequests}>查看我的需求<span>→</span></button>
       <button className="wide-button secondary" onClick={() => { setPhase("idle"); setMatchRun(null); setRequestId(""); setRequestStatus(""); }}>再发布一条需求<span>→</span></button>
+
     </>}
     <button className="p0-back" onClick={onBack}>← 返回修改组队条件</button>
   </div>;

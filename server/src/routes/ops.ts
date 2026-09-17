@@ -7,6 +7,9 @@ import { success } from "../http/responses.js";
 import type { AppEnv } from "../http/types.js";
 import { getOpsFlowDetail, listOpsFlows } from "../ops/flows.js";
 import { getOpsMetrics } from "../ops/metrics.js";
+import { opsActionSchema, recordOpsAction } from "../ops/actions.js";
+import { parseJson } from "../http/validation.js";
+import { requireIdempotencyKey, runIdempotentTransaction } from "../idempotency/service.js";
 
 const metricsQuerySchema = z.object({
   schoolId: z.string().uuid().optional(),
@@ -24,8 +27,10 @@ const flowQuerySchema = z.object({
   dataScope: z.enum(["REAL", "TEST", "DEMO"]).optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
   offset: z.coerce.number().int().min(0).default(0),
+  cursor: z.string().uuid().optional(),
+  exceptionsOnly: z.enum(["true", "false"]).optional().transform((value) => value === "true"),
 });
 
 const requireOps = (role: "USER" | "OPS" | "ADMIN") => {
@@ -46,6 +51,18 @@ const resolveSchoolId = (
 
 export const createOpsRoutes = (db: Database) => {
   const routes = new Hono<AppEnv>();
+  routes.post("/ops/actions", async (c) => {
+    const auth = c.get("auth"); requireOps(auth.role);
+    if (!c.req.header("Content-Type")?.toLowerCase().startsWith("application/json")) {
+      throw new ApiError(400, "JSON_CONTENT_TYPE_REQUIRED", "请求必须使用 application/json");
+    }
+    const input = await parseJson(c, opsActionSchema);
+    const result = await runIdempotentTransaction(db, { userId: auth.userId, routeKey: "POST:/api/v1/ops/actions",
+      idempotencyKey: requireIdempotencyKey(c.req.header("Idempotency-Key")), request: input },
+    async (tx) => ({ data: await recordOpsAction(tx, auth, input), status: 201 }));
+    c.header("Idempotency-Replayed", String(result.replayed));
+    return success(c, result.data, result.status);
+  });
 
   routes.get("/ops/flows", async (context) => {
     const auth = context.get("auth");
@@ -60,6 +77,8 @@ export const createOpsRoutes = (db: Database) => {
       to: context.req.query("to"),
       limit: context.req.query("limit"),
       offset: context.req.query("offset"),
+      cursor: context.req.query("cursor"),
+      exceptionsOnly: context.req.query("exceptionsOnly"),
     });
     if (!parsed.success) {
       throw new ApiError(400, "INVALID_FLOW_FILTERS", "流程筛选条件格式错误", { issues: parsed.error.issues });
@@ -67,6 +86,7 @@ export const createOpsRoutes = (db: Database) => {
     if (parsed.data.from && parsed.data.to && parsed.data.from >= parsed.data.to) {
       throw new ApiError(400, "INVALID_FLOW_RANGE", "流程结束时间必须晚于开始时间");
     }
+    if (parsed.data.cursor && parsed.data.offset) throw new ApiError(400, "INVALID_FLOW_PAGINATION", "cursor 不可与非零 offset 混用");
     return success(
       context,
       await listOpsFlows(db, {

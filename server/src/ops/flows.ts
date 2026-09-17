@@ -1,10 +1,11 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 
 import type { Database } from "../db/client.js";
 import {
   checkins,
   costItems,
   domainEvents,
+  deliveryAttempts,
   invitations,
   matchCandidates,
   matchRuns,
@@ -32,6 +33,8 @@ export type FlowFilters = {
   to?: Date;
   limit: number;
   offset: number;
+  cursor?: string;
+  exceptionsOnly?: boolean;
 };
 
 type FlowRow = {
@@ -62,6 +65,19 @@ type FlowRow = {
 const asNumber = (value: number | string) => Number(value);
 
 export const listOpsFlows = async (db: Database, filters: FlowFilters) => {
+  if (filters.cursor) {
+    const [anchor] = await db.select({ id: requests.id }).from(requests)
+      .where(and(eq(requests.id, filters.cursor), eq(requests.schoolId, filters.schoolId))).limit(1);
+    if (!anchor) throw new ApiError(400, "INVALID_FLOW_CURSOR", "分页游标不存在或不可访问");
+  }
+  const cursorFilter = filters.cursor
+    ? sql`and (r.created_at, r.id) < (select created_at, id from requests where id = ${filters.cursor}::uuid)` : sql``;
+  const exceptionFilter = filters.exceptionsOnly ? sql`and (
+    exists (select 1 from match_runs mr where mr.request_id = r.id and mr.status = 'FAILED')
+    or exists (select 1 from checkins c where c.session_id = s.id and c.status = 'ABSENT')
+    or exists (select 1 from invitations i where i.request_id = r.id and (i.status = 'EXPIRED' or (i.status = 'PENDING' and i.expires_at <= now())))
+    or exists (select 1 from notification_outbox n where n.aggregate_id in (select id from invitations where request_id = r.id) and n.status in ('FAILED', 'DEAD'))
+  )` : sql``;
   const sourceChannelFilter = filters.sourceChannel
     ? sql`and r.source_channel = ${filters.sourceChannel}`
     : sql``;
@@ -120,13 +136,30 @@ export const listOpsFlows = async (db: Database, filters: FlowFilters) => {
       ${dataScopeFilter}
       ${fromFilter}
       ${toFilter}
+      ${cursorFilter}
+      ${exceptionFilter}
     order by r.created_at desc, r.id desc
     limit ${filters.limit + 1}
     offset ${filters.offset}
   `);
 
   const hasMore = rows.length > filters.limit;
+  const pageIds = rows.slice(0, filters.limit).map((row) => row.request_id);
+  const pageSessions = pageIds.length ? await db.select().from(sessions).where(inArray(sessions.requestId, pageIds)) : [];
+  const pageInvitations = pageIds.length ? await db.select().from(invitations).where(inArray(invitations.requestId, pageIds)) : [];
+  const pageCheckins = pageSessions.length ? await db.select().from(checkins).where(inArray(checkins.sessionId, pageSessions.map(({ id }) => id))) : [];
+  const failedRuns = pageIds.length ? await db.select().from(matchRuns).where(and(inArray(matchRuns.requestId, pageIds), eq(matchRuns.status, "FAILED"))) : [];
+  const failedNotifications = pageInvitations.length ? await db.select().from(notificationOutbox)
+    .where(and(inArray(notificationOutbox.aggregateId, pageInvitations.map(({ id }) => id)), inArray(notificationOutbox.status, ["FAILED", "DEAD"]))) : [];
   return {
+    // Record lists are scoped to this cursor page of requests, not global totals.
+    records: { invitations: pageInvitations,
+      responses: pageInvitations.filter((row) => row.status === "ACCEPTED" || row.status === "DECLINED"),
+      sessions: pageSessions, checkins: pageCheckins,
+      exceptions: { matching: failedRuns, notifications: failedNotifications,
+        absent: pageCheckins.filter((row) => row.status === "ABSENT"),
+        expiredInvitations: pageInvitations.filter((row) => row.status === "EXPIRED"),
+        overdueInvitations: pageInvitations.filter((row) => row.status === "PENDING" && row.expiresAt && row.expiresAt <= new Date()) } },
     filters: {
       schoolId: filters.schoolId,
       sceneCode: filters.sceneCode,
@@ -136,7 +169,8 @@ export const listOpsFlows = async (db: Database, filters: FlowFilters) => {
       from: filters.from?.toISOString() ?? null,
       to: filters.to?.toISOString() ?? null,
     },
-    pagination: { limit: filters.limit, offset: filters.offset, hasMore },
+    pagination: { limit: filters.limit, offset: filters.offset, hasMore,
+      nextCursor: hasMore ? rows[filters.limit - 1].request_id : null },
     items: rows.slice(0, filters.limit).map((row) => ({
       requestId: row.request_id,
       creator: { userId: row.creator_user_id, displayName: row.creator_display_name },
@@ -223,11 +257,14 @@ export const getOpsFlowDetail = async (db: Database, requestId: string, schoolId
         .where(eq(regroupIntents.sessionId, session.id))
         .orderBy(asc(regroupIntents.createdAt))
     : [];
-  const aggregateIds = [requestId, ...(session ? [session.id] : []), ...invitationIds];
+  const aggregateIds = [requestId, ...(session ? [session.id] : []), ...invitationIds,
+    ...members.map(({ member }) => member.id), ...checkinRows.map(({ id }) => id),
+    ...reviewRows.map(({ id }) => id), ...regroupRows.map(({ id }) => id)];
   const statusEventRows = await db
     .select()
     .from(statusEvents)
-    .where(inArray(statusEvents.aggregateId, aggregateIds))
+    .where(or(inArray(statusEvents.aggregateId, aggregateIds),
+      sql`${statusEvents.aggregateId} in (select aggregate_id from domain_events where request_id = ${requestId}::uuid)`))
     .orderBy(asc(statusEvents.createdAt));
   const domainEventRows = await db
     .select()
@@ -241,15 +278,18 @@ export const getOpsFlowDetail = async (db: Database, requestId: string, schoolId
         .where(inArray(notificationOutbox.aggregateId, invitationIds))
         .orderBy(asc(notificationOutbox.createdAt))
     : [];
+  const attempts = notifications.length ? await db.select().from(deliveryAttempts)
+    .where(inArray(deliveryAttempts.outboxId, notifications.map(({ id }) => id)))
+    .orderBy(asc(deliveryAttempts.startedAt), asc(deliveryAttempts.attemptNo)) : [];
   const workLogs = await db
     .select()
     .from(opsWorkLogs)
-    .where(eq(opsWorkLogs.requestId, requestId))
+    .where(or(eq(opsWorkLogs.requestId, requestId), session ? eq(opsWorkLogs.sessionId, session.id) : undefined))
     .orderBy(asc(opsWorkLogs.createdAt));
   const costs = await db
     .select()
     .from(costItems)
-    .where(eq(costItems.requestId, requestId))
+    .where(or(eq(costItems.requestId, requestId), session ? eq(costItems.sessionId, session.id) : undefined))
     .orderBy(asc(costItems.incurredAt));
 
   return {
@@ -260,6 +300,7 @@ export const getOpsFlowDetail = async (db: Database, requestId: string, schoolId
     session: session ? { ...session, members, checkins: checkinRows, reviews: reviewRows, regroupIntents: regroupRows } : null,
     invitations: invitationRows,
     notifications,
+    deliveryAttempts: attempts,
     events: { status: statusEventRows, domain: domainEventRows },
     operations: { workLogs, costs },
   };

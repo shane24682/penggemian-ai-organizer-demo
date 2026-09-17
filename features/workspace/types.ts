@@ -11,6 +11,8 @@ export type View =
   | "quiz"
   | "friends"
   | "history"
+  | "workflow"
+  | "ops"
   | "partners"
   | "business"
   | "profile"
