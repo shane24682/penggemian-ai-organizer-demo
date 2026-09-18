@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lt, lte, ne, sql } from "drizzle-orm";
 
 import type { Database, DatabaseTransaction } from "../db/client.js";
 import {
@@ -327,6 +327,88 @@ const promoteNextBackup = async (
   return promoted;
 };
 
+const cancelOverlappingInvitationsForAcceptedUser = async (
+  tx: Transaction,
+  acceptedInvitation: typeof invitations.$inferSelect,
+  acceptedRequest: DispatchRequest,
+  actorUserId: string,
+  now: Date,
+) => {
+  const overlapping = await tx
+    .select({
+      invitation: invitations,
+      requestId: requests.id,
+      creatorUserId: requests.creatorUserId,
+      schoolId: requests.schoolId,
+      startsAt: requests.startsAt,
+      endsAt: requests.endsAt,
+      applicationDeadline: requests.applicationDeadline,
+      participantLimit: requests.participantLimit,
+      dataScope: requests.dataScope,
+    })
+    .from(invitations)
+    .innerJoin(requests, eq(requests.id, invitations.requestId))
+    .where(
+      and(
+        eq(invitations.inviteeUserId, acceptedInvitation.inviteeUserId),
+        ne(invitations.id, acceptedInvitation.id),
+        inArray(invitations.status, ["QUEUED", "PENDING"]),
+        lt(requests.startsAt, acceptedRequest.endsAt),
+        gt(requests.endsAt, acceptedRequest.startsAt),
+      ),
+    )
+    .orderBy(asc(invitations.id));
+
+  for (const row of overlapping) {
+    const [cancelled] = await tx
+      .update(invitations)
+      .set({ status: "CANCELLED", updatedAt: now })
+      .where(and(eq(invitations.id, row.invitation.id), inArray(invitations.status, ["QUEUED", "PENDING"])))
+      .returning();
+    if (!cancelled) continue;
+
+    await tx
+      .update(matchCandidates)
+      .set({ candidateStatus: "SKIPPED" })
+      .where(eq(matchCandidates.id, cancelled.matchCandidateId));
+    const payloadJson = { acceptedInvitationId: acceptedInvitation.id, acceptedRequestId: acceptedRequest.id };
+    await statusEvent(tx, {
+      aggregateType: "INVITATION",
+      aggregateId: cancelled.id,
+      eventType: "INVITATION_CANCELLED_TIME_CONFLICT",
+      actorUserId,
+      fromStatus: row.invitation.status,
+      toStatus: "CANCELLED",
+      payloadJson,
+      idempotencyKey: `invitation:${cancelled.id}:time-conflict:${acceptedInvitation.id}`,
+    });
+
+    const conflictingRequest: DispatchRequest = {
+      id: row.requestId,
+      creatorUserId: row.creatorUserId,
+      schoolId: row.schoolId,
+      startsAt: row.startsAt,
+      endsAt: row.endsAt,
+      applicationDeadline: row.applicationDeadline,
+      participantLimit: row.participantLimit,
+      dataScope: row.dataScope,
+    };
+    await domainEvent(tx, conflictingRequest, {
+      actorUserId,
+      eventType: "INVITATION_CANCELLED_TIME_CONFLICT",
+      aggregateType: "INVITATION",
+      aggregateId: cancelled.id,
+      sessionId: cancelled.sessionId,
+      payloadJson,
+      dedupeKey: `invitation:${cancelled.id}:time-conflict:${acceptedInvitation.id}`,
+    });
+
+    if (row.invitation.status === "PENDING" && row.applicationDeadline > now) {
+      await promoteNextBackup(tx, conflictingRequest, cancelled, now);
+    }
+  }
+};
+
 const cancelRemainingInvitations = async (
   tx: Transaction,
   sessionId: string,
@@ -361,15 +443,18 @@ const transitionInvitation = async (
   now: Date,
 ) => {
   const [invitationSnapshot] = await tx
-    .select({ sessionId: invitations.sessionId })
+    .select({ sessionId: invitations.sessionId, inviteeUserId: invitations.inviteeUserId })
     .from(invitations)
     .where(eq(invitations.id, invitationId))
     .limit(1);
   if (!invitationSnapshot) return { outcome: "NOT_FOUND" as const };
 
-  // Every invitation response for a session takes locks in the same order. This
-  // serializes competing accepts before either transaction can cancel the
-  // other's invitation, avoiding both overfill and a cross-invitation deadlock.
+  // Accepts by the same user are serialized before session and invitation locks.
+  // A transaction-level advisory lock avoids a lock upgrade deadlock with the
+  // idempotency record's foreign-key lock on the same user row.
+  if (action === "ACCEPT") {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${invitationSnapshot.inviteeUserId}))`);
+  }
   await tx.execute(sql`select id from sessions where id = ${invitationSnapshot.sessionId} for update`);
   await tx.execute(sql`select id from invitations where id = ${invitationId} for update`);
   const [invitation] = await tx.select().from(invitations).where(eq(invitations.id, invitationId)).limit(1);
@@ -442,6 +527,31 @@ const transitionInvitation = async (
     };
   }
 
+  const [scheduleConflict] = await tx
+    .select({ sessionId: sessions.id })
+    .from(sessionMembers)
+    .innerJoin(sessions, eq(sessions.id, sessionMembers.sessionId))
+    .where(
+      and(
+        eq(sessionMembers.userId, invitation.inviteeUserId),
+        ne(sessions.id, invitation.sessionId),
+        inArray(sessionMembers.memberStatus, ["CONFIRMED", "COMPLETED"]),
+        inArray(sessions.status, ["FORMING", "CONFIRMED", "IN_PROGRESS"]),
+        lt(sessions.startsAt, request.endsAt),
+        gt(sessions.endsAt, request.startsAt),
+      ),
+    )
+    .limit(1);
+  if (scheduleConflict) {
+    return {
+      outcome: "CONFLICT" as const,
+      error: new ApiError(409, "INVITATION_TIME_CONFLICT", "该时间段已有已接受的组局", {
+        sessionId: scheduleConflict.sessionId,
+      }),
+      invitation,
+    };
+  }
+
   const [roleSlot] = await tx.select().from(requestRoleSlots).where(eq(requestRoleSlots.id, invitation.roleSlotId));
   if (!roleSlot) return { outcome: "NOT_FOUND" as const };
   const occupied = await tx
@@ -508,6 +618,7 @@ const transitionInvitation = async (
     sessionId: invitation.sessionId,
     dedupeKey: `invitation:${invitation.id}:accepted`,
   });
+  await cancelOverlappingInvitationsForAcceptedUser(tx, accepted, request, invitation.inviteeUserId, now);
 
   const confirmedMembers = await tx
     .select({ id: sessionMembers.id })

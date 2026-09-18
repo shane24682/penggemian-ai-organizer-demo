@@ -784,6 +784,278 @@ test("real invitations decline, promote a backup, accept, and confirm one sessio
   }
 });
 
+test("accepting an invitation rechecks overlapping confirmed memberships", async () => {
+  const [tokenA, tokenB] = await Promise.all([
+    login("+8613800000001"),
+    login("+8613800000002"),
+  ]);
+  const requestId = await createSingleCodingSlotRequest(tokenA, "接受前时间冲突复检");
+  let blockingRequestId: string | null = null;
+
+  try {
+    const matchResponse = await app.request(`/api/v1/requests/${requestId}/match`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(matchResponse.status, 200);
+
+    const [targetInvitation] = await connection.db
+      .select()
+      .from(invitations)
+      .where(
+        and(
+          eq(invitations.requestId, requestId),
+          eq(invitations.inviteeUserId, "20000000-0000-4000-8000-000000000002"),
+        ),
+      );
+    assert.equal(targetInvitation?.status, "PENDING");
+
+    const [targetRequest] = await connection.db.select().from(requests).where(eq(requests.id, requestId));
+    assert.ok(targetRequest);
+    const [blockingRequest] = await connection.db
+      .insert(requests)
+      .values({
+        schoolId: targetRequest.schoolId,
+        creatorUserId: "20000000-0000-4000-8000-000000000003",
+        competitionName: "全国大学生数学建模竞赛",
+        title: "已确认的重叠组局",
+        startsAt: targetRequest.startsAt,
+        endsAt: targetRequest.endsAt,
+        weeklyHoursRequired: 8,
+        participantLimit: 2,
+        applicationDeadline: targetRequest.applicationDeadline,
+        status: "FULFILLED",
+        sourceChannel: "DIRECT",
+        dataScope: "TEST",
+      })
+      .returning();
+    blockingRequestId = blockingRequest.id;
+    const [blockingSlot] = await connection.db
+      .insert(requestRoleSlots)
+      .values({ requestId: blockingRequest.id, roleCode: "CODING", slotCount: 1, minLevel: 3, evidenceRequired: true })
+      .returning();
+    const [blockingSession] = await connection.db
+      .insert(sessions)
+      .values({
+        requestId: blockingRequest.id,
+        schoolId: blockingRequest.schoolId,
+        status: "CONFIRMED",
+        startsAt: blockingRequest.startsAt,
+        endsAt: blockingRequest.endsAt,
+      })
+      .returning();
+    await connection.db.insert(sessionMembers).values([
+      {
+        sessionId: blockingSession.id,
+        userId: blockingRequest.creatorUserId,
+        roleSlotId: null,
+        memberType: "HOST",
+      },
+      {
+        sessionId: blockingSession.id,
+        userId: targetInvitation.inviteeUserId,
+        roleSlotId: blockingSlot.id,
+        memberType: "PARTICIPANT",
+      },
+    ]);
+
+    const response = await app.request(`/api/v1/invitations/${targetInvitation.id}/respond`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenB}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": `time-conflict-recheck:${targetInvitation.id}`,
+      },
+      body: JSON.stringify({ action: "ACCEPT" }),
+    });
+    assert.equal(response.status, 409);
+    const payload = (await response.json()) as { error: { code: string } };
+    assert.equal(payload.error.code, "INVITATION_TIME_CONFLICT");
+
+    const [storedInvitation] = await connection.db
+      .select({ status: invitations.status })
+      .from(invitations)
+      .where(eq(invitations.id, targetInvitation.id));
+    const currentMembers = await connection.db
+      .select({ id: sessionMembers.id })
+      .from(sessionMembers)
+      .where(
+        and(
+          eq(sessionMembers.sessionId, targetInvitation.sessionId),
+          eq(sessionMembers.userId, targetInvitation.inviteeUserId),
+        ),
+      );
+    assert.equal(storedInvitation.status, "PENDING");
+    assert.equal(currentMembers.length, 0);
+  } finally {
+    await deleteCreatedRequest(requestId);
+    if (blockingRequestId) await deleteCreatedRequest(blockingRequestId);
+  }
+});
+
+test("accepting one invitation cancels overlapping pending invitations and promotes their backup", async () => {
+  const [tokenA, tokenB, tokenC] = await Promise.all([
+    login("+8613800000001"),
+    login("+8613800000002"),
+    login("+8613800000003"),
+  ]);
+  const acceptedRequestId = await createSingleCodingSlotRequest(tokenA, "接受后关闭重叠邀请 A");
+  const overlappingRequestId = await createSingleCodingSlotRequest(tokenC, "接受后关闭重叠邀请 C");
+
+  try {
+    for (const [requestId, token] of [
+      [acceptedRequestId, tokenA],
+      [overlappingRequestId, tokenC],
+    ]) {
+      const response = await app.request(`/api/v1/requests/${requestId}/match`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      assert.equal(response.status, 200);
+    }
+
+    const invitationRows = await connection.db
+      .select()
+      .from(invitations)
+      .where(inArray(invitations.requestId, [acceptedRequestId, overlappingRequestId]));
+    const acceptedTarget = invitationRows.find(
+      (row) => row.requestId === acceptedRequestId && row.inviteeUserId === "20000000-0000-4000-8000-000000000002",
+    );
+    const cancelledTarget = invitationRows.find(
+      (row) => row.requestId === overlappingRequestId && row.inviteeUserId === "20000000-0000-4000-8000-000000000002",
+    );
+    const promotedBackup = invitationRows.find(
+      (row) => row.requestId === overlappingRequestId && row.inviteeUserId === "20000000-0000-4000-8000-000000000004",
+    );
+    assert.ok(acceptedTarget);
+    assert.ok(cancelledTarget);
+    assert.ok(promotedBackup);
+    assert.equal(acceptedTarget.status, "PENDING");
+    assert.equal(cancelledTarget.status, "PENDING");
+    assert.equal(promotedBackup.status, "QUEUED");
+
+    const response = await app.request(`/api/v1/invitations/${acceptedTarget.id}/respond`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenB}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": `accept-and-cancel:${acceptedTarget.id}`,
+      },
+      body: JSON.stringify({ action: "ACCEPT" }),
+    });
+    assert.equal(response.status, 200);
+
+    const [storedAccepted, storedCancelled, storedPromoted] = await Promise.all([
+      connection.db.select().from(invitations).where(eq(invitations.id, acceptedTarget.id)).then((rows) => rows[0]),
+      connection.db.select().from(invitations).where(eq(invitations.id, cancelledTarget.id)).then((rows) => rows[0]),
+      connection.db.select().from(invitations).where(eq(invitations.id, promotedBackup.id)).then((rows) => rows[0]),
+    ]);
+    assert.equal(storedAccepted.status, "ACCEPTED");
+    assert.equal(storedCancelled.status, "CANCELLED");
+    assert.equal(storedPromoted.status, "PENDING");
+    assert.ok(storedPromoted.sentAt);
+    assert.ok(storedPromoted.expiresAt);
+
+    const [cancelEvent] = await connection.db
+      .select({ eventType: statusEvents.eventType })
+      .from(statusEvents)
+      .where(
+        and(
+          eq(statusEvents.aggregateId, cancelledTarget.id),
+          eq(statusEvents.eventType, "INVITATION_CANCELLED_TIME_CONFLICT"),
+        ),
+      );
+    const [cancelDomainEvent] = await connection.db
+      .select({ eventType: domainEvents.eventType })
+      .from(domainEvents)
+      .where(
+        and(
+          eq(domainEvents.aggregateId, cancelledTarget.id),
+          eq(domainEvents.eventType, "INVITATION_CANCELLED_TIME_CONFLICT"),
+        ),
+      );
+    assert.equal(cancelEvent.eventType, "INVITATION_CANCELLED_TIME_CONFLICT");
+    assert.equal(cancelDomainEvent.eventType, "INVITATION_CANCELLED_TIME_CONFLICT");
+  } finally {
+    await deleteCreatedRequest(acceptedRequestId);
+    await deleteCreatedRequest(overlappingRequestId);
+  }
+});
+
+test("concurrent accepts by one user across overlapping sessions commit only one membership", async () => {
+  const [tokenA, tokenB, tokenC] = await Promise.all([
+    login("+8613800000001"),
+    login("+8613800000002"),
+    login("+8613800000003"),
+  ]);
+  const firstRequestId = await createSingleCodingSlotRequest(tokenA, "同一用户并发接受 A");
+  const secondRequestId = await createSingleCodingSlotRequest(tokenC, "同一用户并发接受 C");
+
+  try {
+    for (const [requestId, token] of [
+      [firstRequestId, tokenA],
+      [secondRequestId, tokenC],
+    ]) {
+      const response = await app.request(`/api/v1/requests/${requestId}/match`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      assert.equal(response.status, 200);
+    }
+
+    const targets = await connection.db
+      .select()
+      .from(invitations)
+      .where(
+        and(
+          inArray(invitations.requestId, [firstRequestId, secondRequestId]),
+          eq(invitations.inviteeUserId, "20000000-0000-4000-8000-000000000002"),
+        ),
+      );
+    assert.equal(targets.length, 2);
+    assert.ok(targets.every(({ status }) => status === "PENDING"));
+
+    const responses = await Promise.all(
+      targets.map((invitation) =>
+        app.request(`/api/v1/invitations/${invitation.id}/respond`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${tokenB}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": `same-user-overlap:${invitation.id}`,
+          },
+          body: JSON.stringify({ action: "ACCEPT" }),
+        }),
+      ),
+    );
+    const responseBodies = await Promise.all(responses.map((response) => response.clone().text()));
+    assert.deepEqual(
+      responses.map(({ status }) => status).sort((left, right) => left - right),
+      [200, 409],
+      responseBodies.join("\n"),
+    );
+
+    const storedTargets = await connection.db
+      .select({ status: invitations.status, sessionId: invitations.sessionId })
+      .from(invitations)
+      .where(inArray(invitations.id, targets.map(({ id }) => id)));
+    assert.deepEqual(new Set(storedTargets.map(({ status }) => status)), new Set(["ACCEPTED", "CANCELLED"]));
+    const memberships = await connection.db
+      .select({ sessionId: sessionMembers.sessionId })
+      .from(sessionMembers)
+      .where(
+        and(
+          eq(sessionMembers.userId, "20000000-0000-4000-8000-000000000002"),
+          inArray(sessionMembers.sessionId, storedTargets.map(({ sessionId }) => sessionId)),
+        ),
+      );
+    assert.equal(memberships.length, 1);
+  } finally {
+    await deleteCreatedRequest(firstRequestId);
+    await deleteCreatedRequest(secondRequestId);
+  }
+});
+
 test("two candidates racing for the last slot cannot overfill or create duplicate sessions", async () => {
   const [tokenA, tokenB, tokenD] = await Promise.all([
     login("+8613800000001"),

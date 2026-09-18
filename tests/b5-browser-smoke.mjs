@@ -43,9 +43,9 @@ const createRequest = async (title, hours) => {
     startsAt: start.toISOString(), endsAt: new Date(start.getTime() + 2 * 60 * 60_000).toISOString(),
     weeklyHoursRequired: 8, participantLimit: 3, applicationDeadline: new Date(start.getTime() - 24 * 60 * 60_000).toISOString(),
     roleSlots: [{ roleCode: "CODING", slotCount: 1, minLevel: 3, evidenceRequired: true }, { roleCode: "WRITING", slotCount: 1, minLevel: 3, evidenceRequired: true }],
-  });
+  }, `b5:create:${randomUUID()}`);
   requestIds.push(request.id);
-  const matched = await call(`/api/v1/requests/${request.id}/match`, tokenA, {});
+  const matched = await call(`/api/v1/requests/${request.id}/match`, tokenA, {}, `b5:match:${request.id}`);
   return { ...request, sessionId: matched.sessionId };
 };
 const waitText = async (page, text) => { await page.getByText(text, { exact: false }).first().waitFor({ timeout: 20_000 }); };
