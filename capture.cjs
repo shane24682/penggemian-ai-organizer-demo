@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // Baseline / after screenshots of the real penggemian app (desktop workbench layout)
 const { chromium } = require('playwright');
 

@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.artifacts/
 
 # next.js
 /.next/
@@ -37,6 +38,7 @@ yarn-error.log*
 
 /dist/
 /dist-edgeone/
+/dist-server/
 *.tsbuildinfo
 /.wrangler/
 /outputs/
