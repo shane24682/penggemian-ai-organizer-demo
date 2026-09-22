@@ -67,12 +67,12 @@ npm run job:advance-sessions
 
 ## Railway 生产部署
 
-Railway API 服务连接仓库 `main`，并添加同一项目内的 PostgreSQL 服务。仓库根目录的 `railway.json` 会执行：
+Railway API 服务连接仓库 `main`，并添加同一项目内的 PostgreSQL 服务。在 API 服务的 Settings 中配置：
 
-- 构建：`npm run server:build`
-- 上线前迁移：`npm run db:migrate`
-- 启动：`npm run server:start`
-- 健康检查：`/health`
+- Custom Build Command：`npm run server:build`
+- Pre-deploy Command：`npm run db:migrate`
+- Custom Start Command：`npm run server:start`
+- Healthcheck Path：`/health`
 
 API 服务变量：
 
