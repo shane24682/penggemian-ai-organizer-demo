@@ -25,6 +25,7 @@
     "job:expire-invitations": "tsx server/src/jobs/expire-invitations.ts",
     "job:deliver-notifications": "tsx server/src/jobs/deliver-notifications.ts",
     "job:advance-sessions": "tsx server/src/jobs/advance-sessions.ts",
+    "job:scheduler": "tsx server/src/jobs/run-scheduler.ts",
     "test:b4": "node --import tsx --test server/test/fulfillment-rules.test.ts",
     "test:b4-integration": "node --import tsx --test server/test/fulfillment.integration.test.ts",
     "test:b5": "node --import tsx --test tests/p0-workflow.test.ts",

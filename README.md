@@ -63,6 +63,30 @@ npm run job:deliver-notifications
 npm run job:advance-sessions
 ```
 
+生产 API 使用 `ENABLE_SCHEDULER=true` 时会在服务进程内串行执行以上任务，默认间隔为 60 秒，不会重叠运行。
+
+## Railway 生产部署
+
+Railway API 服务连接仓库 `main`，并添加同一项目内的 PostgreSQL 服务。仓库根目录的 `railway.json` 会执行：
+
+- 构建：`npm run server:build`
+- 上线前迁移：`npm run db:migrate`
+- 启动：`npm run server:start`
+- 健康检查：`/health`
+
+API 服务变量：
+
+```text
+APP_ENV=production
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+JWT_SECRET=<至少 32 位随机密钥>
+CORS_ORIGIN=https://penggemian.com
+ENABLE_SCHEDULER=true
+SCHEDULER_INTERVAL_MS=60000
+```
+
+迁移 `0003_bootstrap_cuc_school.sql` 只初始化真实学校“中国传媒大学”，注册代码为 `CUC`；生产环境禁止执行 `npm run db:seed`。Railway 生成公网域名后，在 EdgeOne 生产环境设置 `VITE_API_BASE_URL=https://<API 域名>` 并重新部署前端。
+
 B2/B3 API 包括：`GET /api/v1/me/invitations`、
 `GET /api/v1/invitations/:invitationId`、
 `POST /api/v1/invitations/:invitationId/respond`、
