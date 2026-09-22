@@ -156,13 +156,13 @@ const deleteCreatedRequests = async (requestIds: string[], idempotencyKeys: stri
 };
 
 test("seed creates the fixed school, users, availability, capabilities and request", async () => {
-  const [schoolCount] = await connection.db.select({ value: count() }).from(schools);
+  const schoolRows = await connection.db.select({ code: schools.code }).from(schools);
   const [userCount] = await connection.db.select({ value: count() }).from(users);
   const [availabilityCount] = await connection.db.select({ value: count() }).from(userAvailability);
   const [capabilityCount] = await connection.db.select({ value: count() }).from(userCapabilities);
   const [requestCount] = await connection.db.select({ value: count() }).from(requests);
 
-  assert.equal(schoolCount.value, 1);
+  assert.deepEqual(schoolRows.map(({ code }) => code).sort(), ["CUC", "TEST-UNIVERSITY"]);
   assert.equal(userCount.value, 4);
   assert.equal(availabilityCount.value, 4);
   assert.equal(capabilityCount.value, 4);

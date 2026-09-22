@@ -18,11 +18,11 @@ test("delivery attempts enforce retry identity, range and history protection", (
   assert.equal(config.foreignKeys[0].onDelete, "restrict");
 });
 
-test("latest migration creates delivery attempt enum and table", () => {
+test("B3 migration creates delivery attempt enum and table", () => {
   const journal = JSON.parse(readFileSync(resolve("server/drizzle/meta/_journal.json"), "utf8"));
-  const latestTag = journal.entries.at(-1)?.tag;
-  assert.match(latestTag, /^0002_/);
-  const migration = readFileSync(resolve(`server/drizzle/${latestTag}.sql`), "utf8");
+  const migrationTag = journal.entries.find(({ tag }) => /^0002_/.test(tag))?.tag;
+  assert.ok(migrationTag);
+  const migration = readFileSync(resolve(`server/drizzle/${migrationTag}.sql`), "utf8");
   assert.match(migration, /CREATE TYPE "public"\."delivery_attempt_status" AS ENUM/);
   assert.match(migration, /CREATE TABLE "delivery_attempts"/);
   assert.match(migration, /delivery_attempts_outbox_attempt_unique/);

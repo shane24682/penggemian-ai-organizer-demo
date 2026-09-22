@@ -253,3 +253,13 @@ test("B1 TEST fixtures cover the complete assigned lifecycle", () => {
   assert.equal(rows.opsWorkLogs[0].minutesSpent, 5);
   assert.equal(rows.costItems[0].currency, "CNY");
 });
+
+test("production bootstrap opens CUC without creating seed users", () => {
+  const journal = JSON.parse(readFileSync(resolve("server/drizzle/meta/_journal.json"), "utf8"));
+  const migrationTag = journal.entries.find(({ tag }) => /^0003_/.test(tag))?.tag;
+  assert.ok(migrationTag);
+  const migration = readFileSync(resolve(`server/drizzle/${migrationTag}.sql`), "utf8");
+  assert.match(migration, /'CUC'/);
+  assert.match(migration, /'中国传媒大学'/);
+  assert.doesNotMatch(migration, /INSERT INTO "users"/);
+});
