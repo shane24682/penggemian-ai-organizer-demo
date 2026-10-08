@@ -85,7 +85,7 @@ ENABLE_SCHEDULER=true
 SCHEDULER_INTERVAL_MS=60000
 ```
 
-迁移 `0003_bootstrap_cuc_school.sql` 只初始化真实学校“中国传媒大学”，注册代码为 `CUC`；公开注册固定归属该校，页面不要求用户填写学校代码。中国大陆手机号可直接输入 11 位，服务端统一规范化为 E.164。生产环境禁止执行 `npm run db:seed`。Railway 生成公网域名后，在 EdgeOne 生产环境设置 `VITE_API_BASE_URL=https://<API 域名>` 并重新部署前端。
+迁移 `0003_bootstrap_cuc_school.sql` 初始化真实学校“中国传媒大学”，注册代码为 `CUC`。注册页通过公开的 `GET /api/v1/schools` 读取可注册学校，用户必须选择学校；后续新增并启用学校后会自动出现在列表中。中国大陆手机号可直接输入 11 位，服务端统一规范化为 E.164。生产环境禁止执行 `npm run db:seed`。Railway 生成公网域名后，在 EdgeOne 生产环境设置 `VITE_API_BASE_URL=https://<API 域名>` 并重新部署前端。
 
 B2/B3 API 包括：`GET /api/v1/me/invitations`、
 `GET /api/v1/invitations/:invitationId`、

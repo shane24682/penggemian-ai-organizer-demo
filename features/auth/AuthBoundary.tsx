@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState, type ReactNode } from "react";
+import { FormEvent, useEffect, useState, type ReactNode } from "react";
 
-import { ApiRequestError } from "@/lib/p0-api";
+import { ApiRequestError, getRegistrationSchools, type RegistrationSchool } from "@/lib/p0-api";
 import { useAuth } from "./AuthProvider";
 
 type Mode = "login" | "register";
@@ -21,10 +21,31 @@ function AuthForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [schoolCode, setSchoolCode] = useState("");
+  const [schools, setSchools] = useState<RegistrationSchool[]>([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(true);
+  const [schoolsError, setSchoolsError] = useState("");
   const [majorCategory, setMajorCategory] = useState("");
   const [gradeYear, setGradeYear] = useState(1);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    getRegistrationSchools()
+      .then((items) => {
+        if (active) setSchools(items);
+      })
+      .catch((error) => {
+        if (active) setSchoolsError(apiErrorMessage(error));
+      })
+      .finally(() => {
+        if (active) setSchoolsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const switchMode = (next: Mode) => {
     setMode(next);
@@ -49,6 +70,7 @@ function AuthForm() {
         await signUp({
           phoneE164: phone.trim(),
           password,
+          schoolCode,
           displayName: displayName.trim(),
           majorCategory: majorCategory.trim(),
           gradeYear,
@@ -83,15 +105,15 @@ function AuthForm() {
       <div className="auth-panel-heading">
         <small>{mode === "login" ? "WELCOME BACK" : "CREATE ACCOUNT"}</small>
         <h2>{mode === "login" ? "登录你的校园账号" : "创建碰个面账号"}</h2>
-        <p>{mode === "login" ? "登录后继续管理你的需求、邀请和成局。" : "账号身份将用于发布需求、接收邀请和履约记录。"}</p>
+        <p>{mode === "login" ? "登录后继续管理你的需求、邀请和成局。" : "选择学校，创建你的账号。"}</p>
       </div>
       <form className="auth-form" onSubmit={submit}>
         {mode === "register" && <>
-          <div className="auth-campus" aria-label="当前开放学校">
-            <span>当前开放学校</span>
-            <strong>中国传媒大学</strong>
-            <small>CUC 校园内测 · 无需填写学校代码</small>
-          </div>
+          <label>学校<select required value={schoolCode} onChange={(event) => setSchoolCode(event.target.value)} disabled={schoolsLoading || Boolean(schoolsError)}>
+            <option value="">{schoolsLoading ? "正在加载学校…" : schoolsError ? "学校加载失败" : "请选择学校"}</option>
+            {schools.map((school) => <option key={school.code} value={school.code}>{school.name}</option>)}
+          </select></label>
+          {schoolsError && <p className="auth-error" role="alert">{schoolsError}</p>}
           <label>显示名称<input required maxLength={64} autoComplete="name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="你的名字或昵称" /></label>
           <div className="auth-form-row">
             <label>专业类别<input required maxLength={64} value={majorCategory} onChange={(event) => setMajorCategory(event.target.value)} placeholder="例如：计算机" /></label>
@@ -104,7 +126,6 @@ function AuthForm() {
         {(formError || sessionError) && <p className="auth-error" role="alert">{formError || sessionError}</p>}
         <button className="auth-submit" disabled={busy}>{busy ? "正在连接服务…" : mode === "login" ? "登录并进入工作台" : "注册并进入工作台"}<span>→</span></button>
       </form>
-      <p className="auth-privacy">校园内测阶段请使用本人手机号；短信验证和找回密码将在后续接入。</p>
     </section>
   </main>;
 }

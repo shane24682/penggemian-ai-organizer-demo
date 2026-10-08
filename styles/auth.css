@@ -67,10 +67,6 @@
 .auth-form label { color: var(--color-text-muted); font-size: var(--text-body-sm); font-weight: 800; }
 .auth-form input,
 .auth-form select { margin-top: 6px; }
-.auth-campus { display: grid; gap: 3px; border: 1px solid rgb(0 65 50 / 12%); border-radius: var(--radius-md); background: rgb(208 235 183 / 30%); padding: 13px 15px; }
-.auth-campus span { color: var(--color-text-muted); font-size: var(--text-caption); font-weight: 800; }
-.auth-campus strong { color: var(--color-deep); font-size: var(--text-title); }
-.auth-campus small,
 .auth-field-help { display: block; margin-top: 5px; color: var(--color-text-faint); font-size: var(--text-caption); font-weight: 500; }
 .auth-form-row { display: grid; grid-template-columns: minmax(0, 1fr) 124px; gap: 12px; }
 .auth-error { margin: 0; border-radius: var(--radius-md); background: var(--color-danger-soft); color: var(--color-danger); padding: 10px 12px; font-weight: 700; }

@@ -33,10 +33,13 @@ export type AuthUser = AuthSession["user"];
 export type RegisterInput = {
   phoneE164: string;
   password: string;
+  schoolCode: string;
   displayName: string;
   majorCategory: string;
   gradeYear: number;
 };
+
+export type RegistrationSchool = { code: string; name: string };
 
 export type PublishedRequest = {
   id: string;
@@ -124,6 +127,8 @@ export const register = (input: RegisterInput) =>
     method: "POST",
     body: JSON.stringify(input),
   });
+
+export const getRegistrationSchools = () => request<RegistrationSchool[]>("/api/v1/schools");
 
 export const getMe = (token: string) => request<AuthUser>("/api/v1/me", {}, token);
 

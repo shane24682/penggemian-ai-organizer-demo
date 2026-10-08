@@ -15,6 +15,7 @@ import { createNotificationRoutes } from "./routes/notifications.js";
 import { createOpsRoutes } from "./routes/ops.js";
 import { createProfileRoutes } from "./routes/profile.js";
 import { createRequestRoutes } from "./routes/requests.js";
+import { createSchoolRoutes } from "./routes/schools.js";
 
 export const createApp = (config: AppConfig, connection: DatabaseConnection) => {
   const app = new Hono<AppEnv>();
@@ -38,6 +39,7 @@ export const createApp = (config: AppConfig, connection: DatabaseConnection) => 
   });
 
   app.route("/api/v1/auth", createAuthRoutes(config, connection.db));
+  app.route("/api/v1", createSchoolRoutes(connection.db));
   app.use("/api/v1/*", requireAuth(config, connection.db));
   app.route("/api/v1", createProfileRoutes(connection.db));
   app.route("/api/v1", createRequestRoutes(config, connection.db));
