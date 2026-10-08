@@ -6,6 +6,8 @@ const environmentSchema = z.object({
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
   CORS_ORIGIN: z.string().url(),
+  ENABLE_SCHEDULER: z.enum(["0", "1", "false", "true"]).default("false"),
+  SCHEDULER_INTERVAL_MS: z.coerce.number().int().min(10_000).default(60_000),
 });
 
 export type AppConfig = {
@@ -14,6 +16,8 @@ export type AppConfig = {
   databaseUrl: string;
   jwtSecret: string;
   corsOrigin: string;
+  schedulerEnabled: boolean;
+  schedulerIntervalMs: number;
 };
 
 export const loadConfig = (environment: Record<string, string | undefined> = process.env): AppConfig => {
@@ -28,5 +32,7 @@ export const loadConfig = (environment: Record<string, string | undefined> = pro
     databaseUrl: result.data.DATABASE_URL,
     jwtSecret: result.data.JWT_SECRET,
     corsOrigin: result.data.CORS_ORIGIN,
+    schedulerEnabled: result.data.ENABLE_SCHEDULER === "1" || result.data.ENABLE_SCHEDULER === "true",
+    schedulerIntervalMs: result.data.SCHEDULER_INTERVAL_MS,
   };
 };

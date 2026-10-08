@@ -58,7 +58,7 @@ const loginPage = async (index) => {
   page.readCount = () => readCount;
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(`${h5}/?p0=1`);
-  await page.getByLabel("手机号", { exact: true }).fill(`+861380000000${index}`);
+  await page.getByLabel("手机号", { exact: true }).fill(`1380000000${index}`);
   await page.getByLabel("密码", { exact: true }).fill("PenggemianTest!2026");
   await page.getByRole("button", { name: "登录并进入工作台" }).click();
   await waitText(page, `当前用户：测试${index === 4 ? "候补D" : index === 2 ? "主选B" : "主选C"}`);
@@ -155,7 +155,7 @@ try {
   assert.deepEqual(errors, []);
   console.log("PASS network error/retry, mobile width and no browser runtime exceptions");
   await pageB.getByRole("button", { name: "退出当前账号", exact: true }).click();
-  await pageB.getByLabel("手机号", { exact: true }).fill("+8613800000003");
+  await pageB.getByLabel("手机号", { exact: true }).fill("13800000003");
   await pageB.getByLabel("密码", { exact: true }).fill("PenggemianTest!2026");
   await pageB.getByRole("button", { name: "登录并进入工作台" }).click();
   await waitText(pageB, "当前用户：测试主选C");

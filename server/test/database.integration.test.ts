@@ -30,6 +30,7 @@ import {
   statusEvents,
   userAvailability,
   userCapabilities,
+  userProfiles,
   users,
 } from "../src/db/schema/index.js";
 import { processNotificationOutbox } from "../src/notifications/service.js";
@@ -156,13 +157,13 @@ const deleteCreatedRequests = async (requestIds: string[], idempotencyKeys: stri
 };
 
 test("seed creates the fixed school, users, availability, capabilities and request", async () => {
-  const [schoolCount] = await connection.db.select({ value: count() }).from(schools);
+  const schoolRows = await connection.db.select({ code: schools.code }).from(schools);
   const [userCount] = await connection.db.select({ value: count() }).from(users);
   const [availabilityCount] = await connection.db.select({ value: count() }).from(userAvailability);
   const [capabilityCount] = await connection.db.select({ value: count() }).from(userCapabilities);
   const [requestCount] = await connection.db.select({ value: count() }).from(requests);
 
-  assert.equal(schoolCount.value, 1);
+  assert.deepEqual(schoolRows.map(({ code }) => code).sort(), ["CUC", "TEST-UNIVERSITY"]);
   assert.equal(userCount.value, 4);
   assert.equal(availabilityCount.value, 4);
   assert.equal(capabilityCount.value, 4);
@@ -177,6 +178,66 @@ test("database rejects an invalid availability window", async () => {
       endsAt: new Date("2026-09-20T11:00:00Z"),
     }),
   );
+});
+
+test("a CUC visitor can self-register with an 11-digit phone and log in again", async () => {
+  const phone = `139${String(Date.now()).slice(-8)}`;
+  const phoneE164 = `+86${phone}`;
+  const password = "CUCSelfRegister!2026";
+  let userId = "";
+
+  try {
+    const registerResponse = await app.request(
+      "/api/v1/auth/register",
+      jsonRequest({
+        phoneE164: phone,
+        password,
+        displayName: "CUC注册验收用户",
+        majorCategory: "计算机",
+        gradeYear: 2,
+      }),
+    );
+    assert.equal(registerResponse.status, 201);
+    const registered = (await registerResponse.json()) as { data: { accessToken: string; user: { id: string } } };
+    userId = registered.data.user.id;
+    assert.ok(registered.data.accessToken);
+
+    const [stored] = await connection.db
+      .select({ phoneE164: users.phoneE164, schoolCode: schools.code })
+      .from(users)
+      .innerJoin(schools, eq(schools.id, users.schoolId))
+      .where(eq(users.id, userId));
+    assert.deepEqual(stored, { phoneE164, schoolCode: "CUC" });
+
+    const loginResponse = await app.request(
+      "/api/v1/auth/login",
+      jsonRequest({ phoneE164: phone, password }),
+    );
+    assert.equal(loginResponse.status, 200);
+    const loggedIn = (await loginResponse.json()) as { data: { accessToken: string } };
+
+    const meResponse = await app.request("/api/v1/me", {
+      headers: { Authorization: `Bearer ${loggedIn.data.accessToken}` },
+    });
+    assert.equal(meResponse.status, 200);
+
+    const duplicateResponse = await app.request(
+      "/api/v1/auth/register",
+      jsonRequest({
+        phoneE164: phoneE164,
+        password,
+        displayName: "重复注册",
+        majorCategory: "计算机",
+        gradeYear: 2,
+      }),
+    );
+    assert.equal(duplicateResponse.status, 409);
+  } finally {
+    if (userId) {
+      await connection.db.delete(userProfiles).where(eq(userProfiles.userId, userId));
+      await connection.db.delete(users).where(eq(users.id, userId));
+    }
+  }
 });
 
 test("a real account can publish and reload its request while another user cannot view it", async () => {

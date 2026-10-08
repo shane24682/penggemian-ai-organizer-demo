@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { createAccessToken, verifyAccessToken } from "../src/auth/jwt.js";
 import { hashPassword, verifyPassword } from "../src/auth/password.js";
+import { normalizePhoneE164 } from "../src/auth/phone.js";
 
 const secret = "test-secret-that-is-longer-than-thirty-two-characters";
 
@@ -25,4 +26,11 @@ test("access tokens preserve only the frozen identity claims", async () => {
   const token = await createAccessToken(auth, secret);
   assert.deepEqual(await verifyAccessToken(token, secret), auth);
   await assert.rejects(() => verifyAccessToken(token, `${secret}-different`));
+});
+
+test("mainland mobile numbers normalize to E.164 without changing other valid E.164 inputs", () => {
+  assert.equal(normalizePhoneE164("13800000000"), "+8613800000000");
+  assert.equal(normalizePhoneE164("86 138 0000 0000"), "+8613800000000");
+  assert.equal(normalizePhoneE164("+86 (138) 0000-0000"), "+8613800000000");
+  assert.equal(normalizePhoneE164("+14155552671"), "+14155552671");
 });
