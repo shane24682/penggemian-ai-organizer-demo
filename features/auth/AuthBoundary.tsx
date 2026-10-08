@@ -19,8 +19,8 @@ function AuthForm() {
   const [mode, setMode] = useState<Mode>("login");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [schoolCode, setSchoolCode] = useState("");
   const [majorCategory, setMajorCategory] = useState("");
   const [gradeYear, setGradeYear] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -28,12 +28,17 @@ function AuthForm() {
 
   const switchMode = (next: Mode) => {
     setMode(next);
+    setConfirmPassword("");
     setFormError("");
     clearError();
   };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (mode === "register" && password !== confirmPassword) {
+      setFormError("两次输入的密码不一致");
+      return;
+    }
     setBusy(true);
     setFormError("");
     clearError();
@@ -44,7 +49,6 @@ function AuthForm() {
         await signUp({
           phoneE164: phone.trim(),
           password,
-          schoolCode: schoolCode.trim(),
           displayName: displayName.trim(),
           majorCategory: majorCategory.trim(),
           gradeYear,
@@ -83,19 +87,24 @@ function AuthForm() {
       </div>
       <form className="auth-form" onSubmit={submit}>
         {mode === "register" && <>
+          <div className="auth-campus" aria-label="当前开放学校">
+            <span>当前开放学校</span>
+            <strong>中国传媒大学</strong>
+            <small>CUC 校园内测 · 无需填写学校代码</small>
+          </div>
           <label>显示名称<input required maxLength={64} autoComplete="name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="你的名字或昵称" /></label>
-          <label>学校代码<input required maxLength={64} autoCapitalize="characters" value={schoolCode} onChange={(event) => setSchoolCode(event.target.value)} placeholder="由学校或运营提供" /></label>
           <div className="auth-form-row">
             <label>专业类别<input required maxLength={64} value={majorCategory} onChange={(event) => setMajorCategory(event.target.value)} placeholder="例如：计算机" /></label>
             <label>年级<select value={gradeYear} onChange={(event) => setGradeYear(Number(event.target.value))}>{Array.from({ length: 8 }, (_, index) => <option key={index + 1} value={index + 1}>第 {index + 1} 年</option>)}</select></label>
           </div>
         </>}
-        <label>手机号<input required inputMode="tel" autoComplete="username" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+8613800000001" pattern="\+[1-9][0-9]{7,14}" /></label>
+        <label>手机号<input aria-label="手机号" required inputMode="tel" autoComplete="username" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="13800000000" pattern="(?:1[3-9][0-9]{9}|\+?[1-9][0-9]{7,14})" /><small className="auth-field-help">中国大陆手机号可直接输入 11 位</small></label>
         <label>密码<input required type="password" minLength={mode === "register" ? 8 : 1} maxLength={128} autoComplete={mode === "login" ? "current-password" : "new-password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder={mode === "login" ? "输入账号密码" : "至少 8 位"} /></label>
+        {mode === "register" && <label>确认密码<input required type="password" minLength={8} maxLength={128} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="再次输入密码" /></label>}
         {(formError || sessionError) && <p className="auth-error" role="alert">{formError || sessionError}</p>}
         <button className="auth-submit" disabled={busy}>{busy ? "正在连接服务…" : mode === "login" ? "登录并进入工作台" : "注册并进入工作台"}<span>→</span></button>
       </form>
-      <p className="auth-privacy">手机号用于登录与账号验证。</p>
+      <p className="auth-privacy">校园内测阶段请使用本人手机号；短信验证和找回密码将在后续接入。</p>
     </section>
   </main>;
 }

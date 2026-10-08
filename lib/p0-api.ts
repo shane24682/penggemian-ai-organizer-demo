@@ -33,7 +33,6 @@ export type AuthUser = AuthSession["user"];
 export type RegisterInput = {
   phoneE164: string;
   password: string;
-  schoolCode: string;
   displayName: string;
   majorCategory: string;
   gradeYear: number;
