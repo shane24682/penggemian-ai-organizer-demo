@@ -192,6 +192,7 @@ test("a CUC visitor can self-register with an 11-digit phone and log in again", 
       jsonRequest({
         phoneE164: phone,
         password,
+        schoolCode: "CUC",
         displayName: "CUC注册验收用户",
         majorCategory: "计算机",
         gradeYear: 2,
@@ -226,6 +227,7 @@ test("a CUC visitor can self-register with an 11-digit phone and log in again", 
       jsonRequest({
         phoneE164: phoneE164,
         password,
+        schoolCode: "CUC",
         displayName: "重复注册",
         majorCategory: "计算机",
         gradeYear: 2,
@@ -238,6 +240,31 @@ test("a CUC visitor can self-register with an 11-digit phone and log in again", 
       await connection.db.delete(users).where(eq(users.id, userId));
     }
   }
+});
+
+test("registration schools are public and contain active school codes only", async () => {
+  const response = await app.request("/api/v1/schools");
+  assert.equal(response.status, 200);
+  const payload = (await response.json()) as { data: Array<{ code: string; name: string }> };
+  assert.ok(payload.data.some((school) => school.code === "CUC" && school.name === "中国传媒大学"));
+  assert.ok(payload.data.every((school) => school.code && school.name));
+});
+
+test("registration rejects a school that is not available", async () => {
+  const response = await app.request(
+    "/api/v1/auth/register",
+    jsonRequest({
+      phoneE164: "13500009999",
+      password: "UnavailableSchool!2026",
+      schoolCode: "NOT-AVAILABLE",
+      displayName: "不可用学校",
+      majorCategory: "测试",
+      gradeYear: 1,
+    }),
+  );
+  assert.equal(response.status, 422);
+  const payload = (await response.json()) as { error: { code: string } };
+  assert.equal(payload.error.code, "SCHOOL_NOT_AVAILABLE");
 });
 
 test("a real account can publish and reload its request while another user cannot view it", async () => {

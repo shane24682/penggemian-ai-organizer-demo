@@ -13,8 +13,6 @@ import { success } from "../http/responses.js";
 import type { AppEnv } from "../http/types.js";
 import { parseJson } from "../http/validation.js";
 
-const PILOT_SCHOOL_CODE = "CUC";
-
 const phoneSchema = z.preprocess(
   (value) => typeof value === "string" ? normalizePhoneE164(value) : value,
   z.string().regex(/^\+[1-9]\d{7,14}$/, "请输入有效手机号，中国大陆手机号可直接输入11位"),
@@ -23,6 +21,7 @@ const phoneSchema = z.preprocess(
 const registerSchema = z.object({
   phoneE164: phoneSchema,
   password: z.string().min(8).max(128),
+  schoolCode: z.string().min(1).max(64),
   displayName: z.string().min(1).max(64),
   majorCategory: z.string().min(1).max(64),
   gradeYear: z.number().int().min(1).max(8),
@@ -41,9 +40,9 @@ export const createAuthRoutes = (config: AppConfig, db: Database) => {
     const [school] = await db
       .select({ id: schools.id })
       .from(schools)
-      .where(and(eq(schools.code, PILOT_SCHOOL_CODE), eq(schools.status, "ACTIVE")))
+      .where(and(eq(schools.code, input.schoolCode), eq(schools.status, "ACTIVE")))
       .limit(1);
-    if (!school) throw new ApiError(503, "PILOT_SCHOOL_NOT_READY", "中国传媒大学注册暂未开放，请稍后重试");
+    if (!school) throw new ApiError(422, "SCHOOL_NOT_AVAILABLE", "请选择可注册的学校");
 
     try {
       const passwordHash = await hashPassword(input.password);

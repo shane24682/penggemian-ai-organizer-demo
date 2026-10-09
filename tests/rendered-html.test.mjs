@@ -153,9 +153,10 @@ test("keeps the Next.js page entry focused on route composition", async () => {
   assert.match(provider, /AUTH_INVALID_EVENT/);
   assert.match(boundary, /登录你的校园账号/);
   assert.match(boundary, /创建碰个面账号/);
-  assert.match(boundary, /中国传媒大学/);
+  assert.match(boundary, /getRegistrationSchools/);
+  assert.match(boundary, /请选择学校/);
   assert.match(boundary, /确认密码/);
-  assert.doesNotMatch(boundary, /学校代码<input/);
+  assert.doesNotMatch(boundary, /校园内测|短信验证和找回密码|无需填写学校代码/);
   assert.doesNotMatch(p0Panel, /发起人手机号|current-password|登录、发布/);
 });
 
