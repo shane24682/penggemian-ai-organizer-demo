@@ -36,7 +36,7 @@ function Fulfillment({ detail, userId, busy, execute }: { detail: SessionBundle;
     <section className={styles.card} aria-label="签到">
       <h3>签到与到场</h3>
       <p>开放：{formatTime(checkins.opensAt)} · 截止：{formatTime(checkins.closesAt)}</p>
-      <p>超过 {formatTime(checkins.lateAfter)} 签到记为迟到，结果由服务端确定。</p>
+      <p>超过 {formatTime(checkins.lateAfter)} 签到记为迟到</p>
       <ul>{session.members.map((member) => {
         const record = checkins.records.find((item) => item.userId === member.userId);
         return <li key={member.userId}>{member.displayName}：{record ? `${statusLabel(record.status)} · ${formatTime(record.checkedInAt)}` : "尚无签到记录"}</li>;
@@ -45,8 +45,8 @@ function Fulfillment({ detail, userId, busy, execute }: { detail: SessionBundle;
       {!checkins.eligible && <p>当前不可签到：{checkins.records.some((row) => row.userId === userId) ? "已有本人签到/缺席记录" : checkins.reason === "CHECKIN_WINDOW_CLOSED" ? "尚未开放或已超过截止时间" : "当前活动或成员状态不允许签到"}</p>}
     </section>
     <section className={styles.card} aria-label="私人评价">
-      <h3>我的私人评价</h3><p>只显示本人提交的评价，不影响匹配分数。</p>
-      {reviews.length ? <ul>{reviews.map((review) => <li key={review.id}>{session.members.find((member) => member.userId === review.revieweeUserId)?.displayName || review.revieweeUserId} · {review.rating}/5 · {review.comment || "无文字评价"}</li>)}</ul> : <p>暂无本人提交的评价。</p>}
+      <h3>我的私人评价</h3><p>只显示本人提交的评价，不影响匹配分数</p>
+      {reviews.length ? <ul>{reviews.map((review) => <li key={review.id}>{session.members.find((member) => member.userId === review.revieweeUserId)?.displayName || review.revieweeUserId} · {review.rating}/5 · {review.comment || "无文字评价"}</li>)}</ul> : <p>暂无本人提交的评价</p>}
       {completed ? <form onSubmit={(event) => {
         event.preventDefault();
         void execute(`${base}/reviews`, { revieweeUserId: target, rating, tags: [], comment: comment.trim() || null }, "评价已保存")
@@ -56,10 +56,10 @@ function Fulfillment({ detail, userId, busy, execute }: { detail: SessionBundle;
         <label>评分<select aria-label="评分" value={rating} disabled={busy} onChange={(event) => setRating(Number(event.target.value))}>{[5, 4, 3, 2, 1].map((value) => <option key={value} value={value}>{value} 分</option>)}</select></label>
         <label>评价（可选）<textarea value={comment} maxLength={1000} disabled={busy} onChange={(event) => setComment(event.target.value)}/></label>
         <button disabled={busy || !target} type="submit">提交一次评价</button>
-      </form> : <p>活动完成后，已到场成员才可提交评价。</p>}
+      </form> : <p>活动完成后，已到场成员才可提交评价</p>}
     </section>
     <section className={styles.card} aria-label="复组意愿">
-      <h3>复组意愿</h3><p>服务端状态：{regroup.intent ? statusLabel(regroup.intent.status) : "尚未提交"}。单向选择不公开，双方互选才可创建新需求。</p>
+      <h3>复组意愿</h3><p>服务端状态：{regroup.intent ? statusLabel(regroup.intent.status) : "尚未提交"}单向选择不公开，双方互选才可创建新需求</p>
       {completed && <form onSubmit={(event) => { event.preventDefault(); void execute(`${base}/regroup-intents`, { willingUserIds: choices }, "复组意愿已保存").then((ok) => { if (ok) setDraftChoices(null); }); }}>
         <fieldset disabled={busy}><legend>愿意再次同局的已到场成员</legend>{targets.map((member) => <label className={styles.checkbox} key={member.userId}><input type="checkbox" checked={choices.includes(member.userId)} onChange={(event) => setDraftChoices(event.target.checked ? [...choices, member.userId] : choices.filter((id) => id !== member.userId))}/>{member.displayName}</label>)}</fieldset>
         <button disabled={busy || regroup.intent?.status === "CLOSED"}>保存意愿（可清空）</button>
@@ -75,7 +75,7 @@ function Fulfillment({ detail, userId, busy, execute }: { detail: SessionBundle;
         }, "复组需求已保存，可在“我的需求”查看并运行匹配");
       }}>
         <label>新启动会时间（北京时间）<input type="datetime-local" required value={nextStart} disabled={busy} onChange={(event) => setNextStart(event.target.value)}/></label>
-        <p>启动会持续 2 小时，报名截止为开始前 24 小时；不会自动替其他成员接受邀请。</p>
+        <p>启动会持续 2 小时，报名截止为开始前 24 小时；不会自动替其他成员接受邀请</p>
         <button disabled={busy || !regroup.mutualUserIds.length}>创建复组需求</button>
       </form>}
     </section>
@@ -155,13 +155,13 @@ export default function P0WorkflowPanel({ initialTab = "invitations" }: { initia
   };
 
   return <div className={`workspace-view embedded-view ${styles.root}`}>
-    <header className={styles.heading}><div><small>P0 · PostgreSQL 真实共享数据</small><h2>数模活动工作台</h2><p>不同设备登录各自账号即可回应邀请；状态每 5 秒回读，后台降为每分钟。</p></div></header>
+    <header className={styles.heading}><div><small>P0 · PostgreSQL 真实共享数据</small><h2>数模工作台</h2><p>不同设备登录各自账号即可回应邀请</p></div></header>
     {actionError && <p className={styles.error} role="alert">{actionError}</p>}
     {notice && <p className={styles.success} role="status">{notice}</p>}
     {token && <>
       <p>当前用户：{snapshot?.user.displayName || "正在验证登录身份…"}</p>
       <nav className={styles.tabs} aria-label="数模业务导航">{(Object.keys(tabs) as Tab[]).map((name) => <button key={name} aria-pressed={tab === name} disabled={busy} onClick={() => select("", name)}>{tabs[name]}</button>)}</nav>
-      {loadError && <div className={styles.error} role="alert">读取失败：{loadError}。{snapshot ? "以下为上次读取结果，不代表最新状态；写操作已禁用。" : "未读取成功，不显示模拟数据。"}<button onClick={() => { setLoading(true); void refresh(new AbortController().signal); }}>重新读取</button>{sessionId && <button onClick={() => select("")}>返回列表</button>}</div>}
+      {loadError && <div className={styles.error} role="alert">读取失败：{loadError}{snapshot ? "以下为上次读取结果，不代表最新状态" : "未读取成功，不显示模拟数据"}<button onClick={() => { setLoading(true); void refresh(new AbortController().signal); }}>重新读取</button>{sessionId && <button onClick={() => select("")}>返回列表</button>}</div>}
       {loading && <p role="status">正在从服务端恢复状态…</p>}
       {snapshot && <>
         {sessionId ? <>
@@ -173,9 +173,9 @@ export default function P0WorkflowPanel({ initialTab = "invitations" }: { initia
         </> : <>
           {(tab === "invitations" || tab === "backups") && (() => {
             const list = snapshot.invitations.filter((invitation) => tab !== "backups" || invitation.candidateType === "BACKUP");
-            return list.length ? list.map((invitation) => <article className={styles.card} key={invitation.id}><h3>{invitation.requestTitle}</h3><b>{statusLabel(invitation.status)}</b><p>{invitationExplanation(invitation)}</p><p>{formatTime(invitation.startsAt)} · 排名位置 {invitation.queuePosition} · 截止 {formatTime(invitation.expiresAt)}</p>{invitation.status === "PENDING" && <div className={styles.actions}><button disabled={busy || Boolean(loadError)} onClick={() => { void execute(`/api/v1/invitations/${invitation.id}/respond`, { action: "ACCEPT" }, "邀请接受结果已保存，请在我的成局查看"); }}>接受邀请</button><button disabled={busy || Boolean(loadError)} onClick={() => { void execute(`/api/v1/invitations/${invitation.id}/respond`, { action: "DECLINE" }, "拒绝结果已保存，候补由服务端递补"); }}>拒绝邀请</button></div>}{invitation.status === "ACCEPTED" && <button disabled={busy} onClick={() => select(invitation.sessionId, "sessions")}>查看真实成局</button>}</article>) : <p className={styles.card}>{tab === "backups" ? "暂无候补邀请。" : "暂无收到的邀请。"}</p>;
+            return list.length ? list.map((invitation) => <article className={styles.card} key={invitation.id}><h3>{invitation.requestTitle}</h3><b>{statusLabel(invitation.status)}</b><p>{invitationExplanation(invitation)}</p><p>{formatTime(invitation.startsAt)} · 排名位置 {invitation.queuePosition} · 截止 {formatTime(invitation.expiresAt)}</p>{invitation.status === "PENDING" && <div className={styles.actions}><button disabled={busy || Boolean(loadError)} onClick={() => { void execute(`/api/v1/invitations/${invitation.id}/respond`, { action: "ACCEPT" }, "邀请接受结果已保存，请在我的成局查看"); }}>接受邀请</button><button disabled={busy || Boolean(loadError)} onClick={() => { void execute(`/api/v1/invitations/${invitation.id}/respond`, { action: "DECLINE" }, "拒绝结果已保存，候补由服务端递补"); }}>拒绝邀请</button></div>}{invitation.status === "ACCEPTED" && <button disabled={busy} onClick={() => select(invitation.sessionId, "sessions")}>查看真实成局</button>}</article>) : <p className={styles.card}>{tab === "backups" ? "暂无候补邀请" : "暂无收到的邀请"}</p>;
           })()}
-          {(tab === "sessions" || tab === "history") && (snapshot.sessions.filter((session) => tab !== "history" || ["COMPLETED", "CANCELLED"].includes(session.status)).length ? snapshot.sessions.filter((session) => tab !== "history" || ["COMPLETED", "CANCELLED"].includes(session.status)).map((session) => <article key={session.id} className={styles.card}><h3>{session.title}</h3><b>{statusLabel(session.status)} · 本人成员状态：{statusLabel(session.memberStatus)}</b><p>{formatTime(session.startsAt)} — {formatTime(session.endsAt)}</p><button disabled={busy} onClick={() => select(session.id)}>查看成员、签到与复组</button></article>) : <p className={styles.card}>{tab === "history" ? "暂无已完成或已取消的活动历史。" : "暂无本人加入的成局。"}</p>)}
+          {(tab === "sessions" || tab === "history") && (snapshot.sessions.filter((session) => tab !== "history" || ["COMPLETED", "CANCELLED"].includes(session.status)).length ? snapshot.sessions.filter((session) => tab !== "history" || ["COMPLETED", "CANCELLED"].includes(session.status)).map((session) => <article key={session.id} className={styles.card}><h3>{session.title}</h3><b>{statusLabel(session.status)} · 本人成员状态：{statusLabel(session.memberStatus)}</b><p>{formatTime(session.startsAt)} — {formatTime(session.endsAt)}</p><button disabled={busy} onClick={() => select(session.id)}>查看成员、签到与复组</button></article>) : <p className={styles.card}>{tab === "history" ? "暂无已完成或已取消的活动历史" : "暂无本人加入的成局"}</p>)}
           {tab === "requests" && <>
             {snapshot.requests.length ? snapshot.requests.map((item) => <article key={item.id} className={styles.card}><h3>{item.title}</h3><p>{item.status} · {formatTime(item.startsAt)}</p><code>{item.id}</code><div className={styles.actions}><button disabled={busy || Boolean(loadError)} onClick={() => {
               if (lock.current) return; lock.current = true; setBusy(true); setActionError("");
@@ -183,10 +183,10 @@ export default function P0WorkflowPanel({ initialTab = "invitations" }: { initia
             }}>读取已保存匹配结果</button>{item.status === "OPEN" && <button disabled={busy || Boolean(loadError)} onClick={() => {
               if (lock.current) return; lock.current = true; setBusy(true); setActionError("");
               void runMatching(token, item.id).then(() => getCurrentMatching(token, item.id)).then((result) => { setMatchRun(result); return refresh(new AbortController().signal); }).catch((error: unknown) => setActionError(errorMessage(error))).finally(() => { lock.current = false; setBusy(false); });
-            }}>运行真实匹配</button>}</div></article>) : <p className={styles.card}>暂无本人发布的需求，可从数学建模匹配入口发布。</p>}
+            }}>运行真实匹配</button>}</div></article>) : <p className={styles.card}>暂无本人发布的需求，可从数学建模匹配入口发布</p>}
             {matchRun && <section className={styles.card}><h3>数据库匹配回读</h3><code>{matchRun.id}</code><p>{matchRun.algorithmVersion} · {matchRun.candidateCount} 位候选人</p><ul>{matchRun.candidates.map((candidate) => <li key={candidate.id}>{candidate.displayName} · {candidate.candidateType === "PRIMARY" ? "主选" : "候补"} · {candidate.score} 分 · {candidate.reasons.join("、")}</li>)}</ul></section>}
           </>}
-          {tab === "notifications" && (snapshot.notifications.length ? snapshot.notifications.map((notification) => <article key={notification.id} className={styles.card}><h3>组队邀请通知</h3><p>{formatTime(notification.sentAt)} · {notification.readAt ? "已读" : "未读"}</p><button disabled={busy || Boolean(loadError) || Boolean(notification.readAt)} onClick={() => { void execute(`/api/v1/me/notifications/${notification.id}/read`, {}, "通知已标记为已读"); }}>标记已读</button><button disabled={busy} onClick={() => select("", "invitations")}>查看邀请最新状态</button></article>) : <p className={styles.card}>暂无已投递的站内通知，邀请可直接在“我的邀请”查看。</p>)}
+          {tab === "notifications" && (snapshot.notifications.length ? snapshot.notifications.map((notification) => <article key={notification.id} className={styles.card}><h3>组队邀请通知</h3><p>{formatTime(notification.sentAt)} · {notification.readAt ? "已读" : "未读"}</p><button disabled={busy || Boolean(loadError) || Boolean(notification.readAt)} onClick={() => { void execute(`/api/v1/me/notifications/${notification.id}/read`, {}, "通知已标记为已读"); }}>标记已读</button><button disabled={busy} onClick={() => select("", "invitations")}>查看邀请最新状态</button></article>) : <p className={styles.card}>暂无已投递的站内通知，邀请可直接在“我的邀请”查看</p>)}
         </>}
       </>}
     </>}

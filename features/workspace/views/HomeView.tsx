@@ -20,7 +20,7 @@ export default function HomeView({ cards, selectedActivity, onRefresh, onSelect,
   return <div className="workspace-view home-view reference-home">
     <section className="reference-hero">
       <div className="reference-title-row">
-        <h1>今天，遇见同频的人</h1>
+        <h1>遇见同频的人</h1>
         <button className="refresh-home" onClick={onRefresh}><Icon name="refresh-cw" size="sm"/>换一批</button>
       </div>
       <button className={`urgent-banner ${selectedActivity === "麻将三缺一" ? "selected" : ""}`} onClick={() => onSelect("麻将三缺一")}>
@@ -39,6 +39,5 @@ export default function HomeView({ cards, selectedActivity, onRefresh, onSelect,
       </button>)}
     </section>
     <button className="reference-match-button" onClick={onStart}>开始匹配</button>
-    <p className="reference-safe"><Icon name="shield-check" size="sm"/>真人认证 · 隐私保护 · 安全可靠</p>
   </div>;
 }

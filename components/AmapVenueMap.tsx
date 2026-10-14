@@ -147,7 +147,7 @@ export default function AmapVenueMap({ center, venues = [], selectedVenueId, onS
   }, [center, venues, selectedVenueId, onSelectVenue, onPickLocation]);
 
   if (state === "missing") return <div className={`amap-fallback ${compact ? "compact" : ""}`}>
-    <div><span>高</span><div><b>高德地图接口已接入，等待配置 Key</b><p>配置后即可在此点选位置，并在成局后查看场馆标记。</p></div></div>
+    <div><span>高</span><div><b>高德地图接口已接入，等待配置 Key</b><p>配置后即可在此点选位置，并在成局后查看场馆标记</p></div></div>
     <small>需要 Web端（JS API）Key 与安全密钥</small>
   </div>;
 

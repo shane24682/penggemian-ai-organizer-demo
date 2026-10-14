@@ -36,7 +36,7 @@ export default function MbtiTest({ savedResult, onBack, onComplete, onMatch }: P
     <div className="mbti-axis-grid">{result.axes.map(axis => <div key={axis.axis}><span>{axis.left}</span><i><b style={{ left: `${Math.max(6, Math.min(94, 50 + axis.score * 8))}%` }}/></i><span>{axis.right}</span><em>偏向 {axis.letter}</em></div>)}</div>
     <div className="mbti-tags">{result.tags.map(tag => <span key={tag}>#{tag}</span>)}</div>
     <div className="mbti-result-actions"><button onClick={()=>onMatch(result)}>用 MBTI 参与匹配 →</button><button onClick={()=>{setAnswers([]);setStep(0)}}>重新测试</button></div>
-    <small>MBTI结果仅用于活动推荐与相处偏好参考，不用于评价能力，也不会直接公开给其他用户。</small>
+    <small>MBTI结果仅用于活动推荐与相处偏好参考，不用于评价能力，也不会直接公开给其他用户</small>
   </div>;
 
   const question = mbtiQuestions[step];

@@ -143,7 +143,7 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
 
   return <div className="panel p0-match-panel">
     <div className="p0-match-head">
-      <div><span>数学建模竞赛组队</span><h3>发布数模组队需求</h3><p>你默认承担建模岗，我们为你寻找编程和论文写作成员。</p></div>
+      <div><span>数学建模竞赛组队</span><h3>发布数模组队需求</h3><p>你默认承担建模岗，我们为你寻找编程和论文写作成员</p></div>
       <b>智能匹配</b>
     </div>
 
@@ -160,7 +160,7 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
         {phase === "working" ? "正在发布并计算匹配…" : "发布并开始匹配"}<span>→</span>
       </button>
     </form> : matchRun && <>
-      {requestStatus === "CANCELLED" && <p className="p0-error">该需求已取消，候选结果仅作为历史记录展示。</p>}
+      {requestStatus === "CANCELLED" && <p className="p0-error">该需求已取消，候选结果仅作为历史记录展示</p>}
       <div className="p0-proof-strip">
         <span>✓ 需求已发布</span><span>✓ 匹配已完成</span><span>✓ {matchRun.candidateCount ? "邀请已发送" : "等待合适成员"}</span>
       </div>
@@ -170,9 +170,9 @@ export default function P0MathModelingPanel({ startsAtValue, weeklyHours, onBack
           <div><div><b>{candidate.displayName}</b><em>{candidate.candidateType === "PRIMARY" ? "主选" : `候补 #${candidate.rank - 1}`}</em></div><p>{roleName(candidate)} · {candidate.reasons.join(" · ")}</p></div>
           <strong>{Number(candidate.score).toFixed(0)}<small>分</small></strong>
         </article>)}
-        {!matchRun.candidates.length && <div className="p0-empty">需求已保存，但当前没有通过硬门槛的候选人。可调整启动会时间或每周投入后重新发布。</div>}
+        {!matchRun.candidates.length && <div className="p0-empty">需求已保存，但当前没有通过硬门槛的候选人</div>}
       </div>
-      <div className="p0-handoff"><b>下一步：真实邀请与成局</b><p>主选邀请和候补队列已由服务端持久化。对方在“数模活动”登录自己的账号即可回应，不模拟他人操作。</p><button onClick={onOpenWorkflow}>进入数模活动工作台 →</button></div>
+      <div className="p0-handoff"><b>下一步：真实邀请与成局</b><p>主选邀请和候补队列已由服务端持久化对方在“数模”登录自己的账号即可回应，不模拟他人操作</p><button onClick={onOpenWorkflow}>进入数模工作台 →</button></div>
       {!["CANCELLED", "FULFILLED", "EXPIRED"].includes(requestStatus) && <button className="wide-button secondary" onClick={() => void cancelCurrent()}>取消当前需求<span>×</span></button>}
       <button className="wide-button secondary" onClick={onOpenRequests}>查看我的需求<span>→</span></button>
       <button className="wide-button secondary" onClick={() => { setPhase("idle"); setMatchRun(null); setRequestId(""); setRequestStatus(""); }}>再发布一条需求<span>→</span></button>

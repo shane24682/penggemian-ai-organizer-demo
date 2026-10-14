@@ -27,7 +27,7 @@ const verificationLabel = (status: VerificationStatus) => status === "verified" 
 export default function FriendsView(props: FriendsViewProps) {
   const { verificationStatus, scannedFriendId, query, results, friends, incomingFriends, friendIds, outgoingIds, incomingIds } = props;
   return <div className="workspace-view embedded-view friends-view">
-    <div className="view-heading"><div><span>CAMPUS FRIEND NETWORK</span><h2>好友</h2><p>按碰个面 ID、昵称或二维码找到同校同学，发出好友申请。</p></div><b>{friends.length}<small>位本机好友</small></b></div>
+    <div className="view-heading"><div><span>CAMPUS FRIEND NETWORK</span><h2>好友</h2><p>按碰个面 ID、昵称或二维码找到同校同学，发出好友申请</p></div><b>{friends.length}<small>位本机好友</small></b></div>
     {scannedFriendId && <div className="scanned-friend-banner">
       <span><Icon name="qr-code" size="md"/></span><div><b>好友码校验通过</b><p>识别到碰个面ID：{scannedFriendId}</p></div>
       {outgoingIds.includes(scannedFriendId) ? <button disabled>等待对方通过</button> : <button onClick={() => props.onSendRequest(scannedFriendId)}><Icon name="plus" size="sm"/>发送好友申请</button>}
@@ -50,7 +50,7 @@ export default function FriendsView(props: FriendsViewProps) {
             <div className="friend-copy"><div><h3>{profile.nickname}</h3><em>{profile.id}</em></div><p>{profile.school} · {profile.grade} · {profile.major}</p><div>{profile.tags.map(tag => <small key={tag}>{tag}</small>)}</div><i>{profile.mutual ? `${profile.mutual} 位共同好友 · ` : ""}{profile.lastActive}</i></div>
             {isFriend ? <button className="friend-state" disabled>已是好友</button> : isIncoming ? <button className="friend-accept" onClick={() => props.onAcceptRequest(profile.id)}>同意申请</button> : isOutgoing ? <button className="friend-state" disabled>等待通过</button> : <button className="friend-add" onClick={() => props.onSendRequest(profile.id)}><Icon name="plus" size="sm"/>添加好友</button>}
           </article>;
-        })}</div> : <div className="friend-empty"><span><Icon name="search" size="lg"/></span><h3>没有找到这个用户</h3><p>请检查完整 ID 或昵称是否正确；校园身份未完成的用户不会出现在搜索结果中。</p></div>}
+        })}</div> : <div className="friend-empty"><span><Icon name="search" size="lg"/></span><h3>没有找到这个用户</h3><p>请检查完整 ID 或昵称是否正确；校园身份未完成的用户不会出现在搜索结果中</p></div>}
       </section>
       <aside className="friend-side">
         {incomingFriends.length > 0 && <div className="friend-panel"><div className="friend-panel-title"><b>新的好友申请</b><span>{incomingFriends.length}</span></div>{incomingFriends.map(profile => <div className="friend-request" key={profile.id}><span>{profile.avatar}</span><div><b>{profile.nickname}</b><p>{profile.id} · {profile.school}</p></div><button onClick={() => props.onAcceptRequest(profile.id)}>同意</button><button onClick={() => props.onIgnoreRequest(profile.id)}>忽略</button></div>)}</div>}

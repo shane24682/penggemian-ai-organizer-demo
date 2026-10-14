@@ -44,22 +44,22 @@ export type MbtiResult = {
 };
 
 const typeCopy: Record<string, { title: string; description: string; tags: string[] }> = {
-  INTJ: { title: "独立策划者", description: "喜欢目标清晰、组织高效的小组，在有准备的探索中更容易投入。", tags: ["目标感", "慢热", "探索欲"] },
-  INTP: { title: "好奇研究者", description: "对新玩法和有趣问题敏感，适合低压力、能自由探索的活动。", tags: ["慢热", "探索欲", "创作型"] },
-  ENTJ: { title: "行动组织者", description: "擅长推动事情发生，喜欢目标明确、节奏利落的团队活动。", tags: ["行动派", "目标感", "组队型"] },
-  ENTP: { title: "灵感发起人", description: "享受新鲜体验和观点碰撞，常常能让一群陌生人快速热起来。", tags: ["探索欲", "表达型", "热闹"] },
-  INFJ: { title: "共鸣连接者", description: "重视活动意义和深度连接，更适合有共同主题的小规模活动。", tags: ["同好型", "慢热", "目标感"] },
-  INFP: { title: "温柔体验家", description: "看重真实感受和自由表达，在创作、自然与同好活动中更自在。", tags: ["创作型", "轻社交", "探索欲"] },
-  ENFJ: { title: "氛围主理人", description: "善于照顾团队感受，也愿意主动让每个人融入活动。", tags: ["组队型", "表达型", "同好型"] },
-  ENFP: { title: "活力探索家", description: "容易被新鲜的人和事点燃，适合轻松、开放、变化丰富的活动。", tags: ["热闹", "探索欲", "创作型"] },
-  ISTJ: { title: "可靠执行者", description: "重视规则、守时和确定性，是稳定复组和长期小组的理想成员。", tags: ["目标感", "行动派", "轻社交"] },
-  ISFJ: { title: "贴心同行者", description: "喜欢熟悉、安全、有照顾感的活动氛围，更容易在固定小组中建立关系。", tags: ["轻社交", "同好型", "慢热"] },
-  ESTJ: { title: "高效队长", description: "愿意承担责任并推进进度，适合竞技、协作和明确分工的活动。", tags: ["行动派", "组队型", "目标感"] },
-  ESFJ: { title: "热情召集人", description: "享受一起参与和互相回应，擅长把一次活动变成熟人局。", tags: ["热闹", "组队型", "同好型"] },
-  ISTP: { title: "冷静玩家", description: "喜欢直接上手、边做边学，在技能、竞技和户外体验中进入状态。", tags: ["行动派", "轻社交", "探索欲"] },
-  ISFP: { title: "自在创作者", description: "重视当下体验和审美表达，适合低压力的手作、摄影和自然活动。", tags: ["创作型", "轻社交", "慢热"] },
-  ESTP: { title: "现场玩家", description: "反应快、敢尝试，越是有互动、有挑战的活动越容易投入。", tags: ["行动派", "热闹", "探索欲"] },
-  ESFP: { title: "快乐气氛组", description: "喜欢即时互动和共同体验，能让活动现场自然产生连接。", tags: ["热闹", "组队型", "轻社交"] },
+  INTJ: { title: "独立策划者", description: "喜欢目标清晰、组织高效的小组，在有准备的探索中更容易投入", tags: ["目标感", "慢热", "探索欲"] },
+  INTP: { title: "好奇研究者", description: "对新玩法和有趣问题敏感，适合低压力、能自由探索的活动", tags: ["慢热", "探索欲", "创作型"] },
+  ENTJ: { title: "行动组织者", description: "擅长推动事情发生，喜欢目标明确、节奏利落的团队活动", tags: ["行动派", "目标感", "组队型"] },
+  ENTP: { title: "灵感发起人", description: "享受新鲜体验和观点碰撞，常常能让一群陌生人快速热起来", tags: ["探索欲", "表达型", "热闹"] },
+  INFJ: { title: "共鸣连接者", description: "重视活动意义和深度连接，更适合有共同主题的小规模活动", tags: ["同好型", "慢热", "目标感"] },
+  INFP: { title: "温柔体验家", description: "看重真实感受和自由表达，在创作、自然与同好活动中更自在", tags: ["创作型", "轻社交", "探索欲"] },
+  ENFJ: { title: "氛围主理人", description: "善于照顾团队感受，也愿意主动让每个人融入活动", tags: ["组队型", "表达型", "同好型"] },
+  ENFP: { title: "活力探索家", description: "容易被新鲜的人和事点燃，适合轻松、开放、变化丰富的活动", tags: ["热闹", "探索欲", "创作型"] },
+  ISTJ: { title: "可靠执行者", description: "重视规则、守时和确定性，是稳定复组和长期小组的理想成员", tags: ["目标感", "行动派", "轻社交"] },
+  ISFJ: { title: "贴心同行者", description: "喜欢熟悉、安全、有照顾感的活动氛围，更容易在固定小组中建立关系", tags: ["轻社交", "同好型", "慢热"] },
+  ESTJ: { title: "高效队长", description: "愿意承担责任并推进进度，适合竞技、协作和明确分工的活动", tags: ["行动派", "组队型", "目标感"] },
+  ESFJ: { title: "热情召集人", description: "享受一起参与和互相回应，擅长把一次活动变成熟人局", tags: ["热闹", "组队型", "同好型"] },
+  ISTP: { title: "冷静玩家", description: "喜欢直接上手、边做边学，在技能、竞技和户外体验中进入状态", tags: ["行动派", "轻社交", "探索欲"] },
+  ISFP: { title: "自在创作者", description: "重视当下体验和审美表达，适合低压力的手作、摄影和自然活动", tags: ["创作型", "轻社交", "慢热"] },
+  ESTP: { title: "现场玩家", description: "反应快、敢尝试，越是有互动、有挑战的活动越容易投入", tags: ["行动派", "热闹", "探索欲"] },
+  ESFP: { title: "快乐气氛组", description: "喜欢即时互动和共同体验，能让活动现场自然产生连接", tags: ["热闹", "组队型", "轻社交"] },
 };
 
 export function calculateMbti(answers: number[]): MbtiResult {

@@ -193,14 +193,14 @@ export default function P0RequestCenter({ onCreateRequest, onNotify }: Props) {
 
   return <section className="workspace-view p0-request-center">
     <header className="request-center-head">
-      <div><span>MY REQUESTS</span><h2>我的需求</h2><p>查看进度，继续匹配或发起新需求。</p></div>
+      <div><span>MY REQUESTS</span><h2>我的需求</h2><p>查看进度，继续匹配或发起新需求</p></div>
       <button onClick={onCreateRequest}>发起新需求 <b>＋</b></button>
     </header>
 
     {error && <p className="p0-error" role="alert">{error}</p>}
 
     {listLoading ? <div className="request-center-loading">正在加载你的需求…</div> : !requests.length ? <div className="request-center-empty">
-      <span>组</span><h3>还没有发起过需求</h3><p>先发布一条数学建模组队需求吧。</p><button onClick={onCreateRequest}>发起第一条需求</button>
+      <span>组</span><h3>还没有发起过需求</h3><p>先发布一条数学建模组队需求吧</p><button onClick={onCreateRequest}>发起第一条需求</button>
     </div> : <div className="request-center-layout">
       <aside className="request-list" aria-label="我的需求列表">
         <div><b>{requests.length} 条需求</b><button disabled={busy} onClick={() => void refresh()}>刷新</button></div>
@@ -225,13 +225,13 @@ export default function P0RequestCenter({ onCreateRequest, onNotify }: Props) {
         <section className="request-match-result">
           <div><h4>匹配结果</h4>{matchRun && <span>{matchRun.candidateCount} 位候选人</span>}</div>
           {matchState === "loading" && <p>正在加载匹配结果…</p>}
-          {matchState === "empty" && <div className="request-no-match"><b>还没有运行匹配</b><p>确认时间和投入要求后即可开始。</p></div>}
-          {matchState === "error" && <div className="request-no-match"><b>暂时无法读取匹配结果</b><p>可以刷新后重试。</p></div>}
+          {matchState === "empty" && <div className="request-no-match"><b>还没有运行匹配</b><p>确认时间和投入要求后即可开始</p></div>}
+          {matchState === "error" && <div className="request-no-match"><b>暂时无法读取匹配结果</b><p>可以刷新后重试</p></div>}
           {matchState === "ready" && matchRun && <div className="request-candidates">
             {matchRun.candidates.map((candidate) => <div key={candidate.id}>
               <span>{candidate.displayName.slice(0, 1)}</span><div><b>{candidate.displayName}</b><small>{candidate.candidateType === "PRIMARY" ? "主选" : "候补"} · {candidate.reasons.join(" · ")}</small></div><strong>{Number(candidate.score).toFixed(0)} 分</strong>
             </div>)}
-            {!matchRun.candidates.length && <p>暂时没有合适成员，可以调整时间或投入要求后重新发布。</p>}
+            {!matchRun.candidates.length && <p>暂时没有合适成员，可以调整时间或投入要求后重新发布</p>}
           </div>}
         </section>
 

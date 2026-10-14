@@ -50,7 +50,7 @@ export default function ActivityRoom({
 }: Props) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([
-    { name: "AI主理人", text: `欢迎开始${activity}。请先完成下面的活动目标投票。`, ai: true },
+    { name: "AI主理人", text: `欢迎开始${activity}请先完成下面的活动目标投票`, ai: true },
     { name: participants[0]?.name || "林小满", text: "我已经确认时间，按时到！", ai: false },
   ]);
   const [venueVotes, setVenueVotes] = useState<Record<string, number>>(() => Object.fromEntries(venues.map((venue, index) => [venue.id, index === 0 ? 3 : 1])));
@@ -87,25 +87,25 @@ export default function ActivityRoom({
 
         {scene === "offline" && selectedVenue && <div className="room-panel departure-card"><div className="room-section-title"><b>出发与签到</b><span>{reminder ? "提醒已开" : "提醒已关"}</span></div><a className="venue-navigation" href={navigationUrl} target="_blank" rel="noreferrer" onClick={() => onNotify("正在打开高德地图，默认从当前位置步行导航")}><span><b>{selectedVenue.name}</b><small>{selectedVenue.address}</small></span><em>去高德导航 →</em></a><div className="checkin-code"><span>签到码</span><b>2861</b><small>活动前30分钟开放</small></div><button onClick={() => setReminder(value => !value)}>{reminder ? "关闭出发提醒" : "开启出发提醒"}</button><div className="calendar-actions mobile-only"><button className="mobile-calendar-button" onClick={() => setCalendarOpen(true)}>添加到手机日历</button><small>支持 iPhone / Android / 电脑 · 提前 1 小时提醒</small></div></div>}
 
-        <div className="room-panel room-safety"><div className="room-section-title"><b>临时变动</b><span>候补自动接力</span></div>{exitRequested ? <div className="replacement"><b>已发出递补邀请</b><p>候补成员正在确认，原名额暂时保留10分钟。</p></div> : <button onClick={() => { setExitRequested(true); onNotify("退出申请已提交，AI正在邀请候补"); }}>临时退出并通知候补</button>}<button onClick={() => onNotify("已打开举报与安全协助入口")}>举报 / 拉黑 / 安全协助</button></div>
+        <div className="room-panel room-safety"><div className="room-section-title"><b>临时变动</b><span>候补自动接力</span></div>{exitRequested ? <div className="replacement"><b>已发出递补邀请</b><p>候补成员正在确认，原名额暂时保留10分钟</p></div> : <button onClick={() => { setExitRequested(true); onNotify("退出申请已提交，AI正在邀请候补"); }}>临时退出并通知候补</button>}<button onClick={() => onNotify("已打开举报与安全协助入口")}>举报 / 拉黑 / 安全协助</button></div>
       </aside>
     </div>
 
-    <button className="simulate-finish" onClick={onEndActivity}>模拟活动结束，进入互评与关系沉淀 →</button>
+    <button className="simulate-finish" onClick={onEndActivity}>模拟活动结束，进入互评与关系沉淀</button>
 
     {calendarOpen && <div className="modal-layer calendar-modal-layer" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setCalendarOpen(false); }}>
       <section className="action-modal calendar-modal" role="dialog" aria-modal="true" aria-labelledby="calendar-modal-title">
         <button className="modal-close" aria-label="关闭日历预览" onClick={() => setCalendarOpen(false)}><Icon name="x" size="sm"/></button>
         <span>ADD TO CALENDAR</span>
         <h2 id="calendar-modal-title">添加到手机日历</h2>
-        <p>确认后会生成一个标准日历事件，由你的设备选择系统日历或其他日历应用打开。</p>
+        <p>确认后会生成一个标准日历事件，由你的设备选择系统日历或其他日历应用打开</p>
         <div className="calendar-preview">
           <div><span>活动</span><b>碰个面｜{activity}</b></div>
           <div><span>时间</span><b>{time}（约 2 小时）</b></div>
           <div><span>地点</span><b>{scene === "offline" && selectedVenue ? <>{selectedVenue.name}<small>{selectedVenue.address}</small></> : scene === "online" ? "临时线上房间" : "项目协作空间"}</b></div>
           <div><span>提醒</span><b>开始前 1 小时</b></div>
         </div>
-        <div className="calendar-privacy"><i><Icon name="shield-check" size="sm"/></i><p><b>不会读取你的日历</b><small>仅生成本次活动的日历文件；是否保存由你在系统日历中确认。</small></p></div>
+        <div className="calendar-privacy"><i><Icon name="shield-check" size="sm"/></i><p><b>不会读取你的日历</b><small>仅生成本次活动的日历文件；是否保存由你在系统日历中确认</small></p></div>
         <div className="calendar-modal-actions"><button onClick={() => setCalendarOpen(false)}>暂不添加</button><button onClick={() => { onAddMobileCalendar(); setCalendarOpen(false); }}>确认并打开日历</button></div>
       </section>
     </div>}
