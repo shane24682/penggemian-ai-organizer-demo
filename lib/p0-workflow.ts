@@ -80,10 +80,10 @@ const statusLabels: Record<string, string> = {
 export const statusLabel = (status: string) => statusLabels[status] || status;
 
 export const invitationExplanation = (invitation: Invitation) => {
-  if (invitation.status === "QUEUED") return "正在候补队列中；主选拒绝或超时后由服务端自动递补。排队位置不是等待人数。";
-  if (invitation.status === "PENDING" && invitation.candidateType === "BACKUP") return "已由候补递补为正式邀请，请在有效期内回应。";
-  if (invitation.status === "PENDING") return "你是本轮主选，请在有效期内回应。";
-  return "邀请已结束，最终状态以服务端记录为准。";
+  if (invitation.status === "QUEUED") return "正在候补队列中；主选拒绝或超时后由服务端自动递补排队位置不是等待人数";
+  if (invitation.status === "PENDING" && invitation.candidateType === "BACKUP") return "已由候补递补为正式邀请，请在有效期内回应";
+  if (invitation.status === "PENDING") return "你是本轮主选，请在有效期内回应";
+  return "邀请已结束，最终状态以服务端记录为准";
 };
 
 export type PollEnvironment = {

@@ -16,7 +16,7 @@ type WorkspaceShellProps = {
 const primaryNavigation: Array<{ view: View; icon: IconName; label: string }> = [
   { view: "home", icon: "home", label: "发现" },
   { view: "match", icon: "heart", label: "匹配" },
-  { view: "workflow", icon: "users", label: "数模活动" },
+  { view: "workflow", icon: "users", label: "数模" },
   { view: "requests", icon: "calendar", label: "需求" },
 
   { view: "friends", icon: "users", label: "好友" },
@@ -36,7 +36,7 @@ export default function WorkspaceShell({ view, location, children, onNavigate, o
         {user && user.role !== "USER" && <button className={view === "ops" ? "active" : ""} onClick={() => onNavigate("ops")}><span><Icon name="calendar" size="sm"/></span>运营</button>}
         <div className="rail-spacer"/>
         <button className={profileViews.includes(view) ? "active" : ""} onClick={() => onNavigate("profile")}><span><Icon name="user" size="sm"/></span>我的</button>
-        <div className="rail-trust">🌿<small>真实校园 · 安全守护<br/>遇见同频的你</small></div>
+        <div className="rail-trust">🌿<small>遇见同频的你</small></div>
       </aside>
       <div className={`workspace-main view-${view}`}>
         <div className="workspace-top">

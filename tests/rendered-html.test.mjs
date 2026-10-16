@@ -18,9 +18,9 @@ test("server-renders the global authentication boundary", async () => {
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
-  assert.match(html, /<title>碰个面｜AI校园活动主理人<\/title>/i);
+  assert.match(html, /<title>碰个面｜校园活动主理人<\/title>/i);
   assert.match(html, /RESTORING SESSION/);
-  assert.match(html, /正在恢复你的工作台/);
+  assert.match(html, /正在进入工作台/);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview/i);
 });
 
@@ -66,7 +66,7 @@ test("ships double-consent invitations, activity rooms and post-event relationsh
   assert.doesNotMatch(room, /AI主理人公告|AI破冰问题|参与者状态/);
   assert.match(room, /场馆投票/);
   assert.match(room, /临时退出并通知候补/);
-  assert.match(postActivity, /双方同意/);
+  assert.match(postActivity, /双向同意完成/);
   assert.match(postActivity, /私密反馈/);
   assert.match(postActivity, /不会影响匹配度/);
   assert.match(postActivity, /固定每周六复组/);

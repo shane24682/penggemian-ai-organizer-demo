@@ -88,13 +88,13 @@ function AuthForm() {
       <div className="auth-brand"><span>碰</span><b>碰个面</b></div>
       <div>
         <small>REAL CAMPUS · REAL TEAM</small>
-        <h1>一次登录，管理你发起和加入的每一个局。</h1>
-        <p>从发布需求、回应邀请到正式成局，所有进度都集中在你的工作台。</p>
+        <h1>登录即可管理你的每一个局</h1>
+        <p>发布需求到正式成局，都在你的工作台</p>
       </div>
       <ul>
-        <li><b>01</b><span>发布多条组队需求<small>每条需求独立匹配和成局</small></span></li>
-        <li><b>02</b><span>收到邀请，及时回应<small>主选和候补进度一目了然</small></span></li>
-        <li><b>03</b><span>统一查看需求与成局<small>随时继续上次的组队进度</small></span></li>
+        <li><b>01</b><span>发布组队需求</span></li>
+        <li><b>02</b><span>邀请与回应</span></li>
+        <li><b>03</b><span>统一查看需求与成局</span></li>
       </ul>
     </section>
     <section className="auth-panel" aria-label={mode === "login" ? "登录" : "注册"}>
@@ -105,7 +105,7 @@ function AuthForm() {
       <div className="auth-panel-heading">
         <small>{mode === "login" ? "WELCOME BACK" : "CREATE ACCOUNT"}</small>
         <h2>{mode === "login" ? "登录你的校园账号" : "创建碰个面账号"}</h2>
-        <p>{mode === "login" ? "登录后继续管理你的需求、邀请和成局。" : "选择学校，创建你的账号。"}</p>
+        <p>{mode === "login" ? "登录后继续" : "选择学校，创建你的账号"}</p>
       </div>
       <form className="auth-form" onSubmit={submit}>
         {mode === "register" && <>
@@ -140,8 +140,8 @@ export default function AuthBoundary({ children }: { children: ReactNode }) {
     <section className="auth-state-card" role={status === "error" ? "alert" : "status"}>
       <span className="auth-state-mark">碰</span>
       <small>{status === "error" ? "CONNECTION INTERRUPTED" : "RESTORING SESSION"}</small>
-      <h1>{status === "error" ? "暂时无法验证登录状态" : "正在恢复你的工作台"}</h1>
-      <p>{status === "error" ? error : "正在恢复登录状态，请稍候。"}</p>
+      <h1>{status === "error" ? "暂时无法验证登录状态" : "正在进入工作台"}</h1>
+      <p>{status === "error" ? error : "正在恢复登录状态，请稍候"}</p>
       {status === "error" && <div><button onClick={() => void restore()}>重新连接</button><button className="secondary" onClick={() => logout()}>使用其他账号</button></div>}
     </section>
   </main>;

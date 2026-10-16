@@ -149,7 +149,7 @@ export const publishMathModelingRequest = (
       body: JSON.stringify({
         competitionName: "全国大学生数学建模竞赛",
         title: input.title,
-        description: "寻找一名编程成员和一名论文写作成员，完成首次启动会后进入正式协作。",
+        description: "寻找一名编程成员和一名论文写作成员，完成首次启动会后进入正式协作",
         startsAt: input.startsAt.toISOString(),
         endsAt: input.endsAt.toISOString(),
         weeklyHoursRequired: input.weeklyHoursRequired,

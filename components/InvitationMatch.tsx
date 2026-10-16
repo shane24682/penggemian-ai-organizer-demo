@@ -145,7 +145,7 @@ export default function InvitationMatch({
 
     <div className="same-frequency-push">
       <b>已向 {sameFrequencyTargets.length} 位同频同学主动推送邀请</b>
-      <span>本场权重：{matchPlan.factors.join(" · ")}；同校与参与范围先做硬筛选，对方仍可确认、拒绝或忽略。</span>
+      <span>本场权重：{matchPlan.factors.join(" · ")}；同校与参与范围先做硬筛选，对方仍可确认、拒绝或忽略</span>
     </div>
 
     <div className="candidate-list">
@@ -160,7 +160,7 @@ export default function InvitationMatch({
 
     <div className="invite-demo-actions">
       {!ready && <button onClick={advance}>模拟下一位同学回应 →</button>}
-      {!ready && <p>每次点击会运行“确认 / 拒绝 → 自动递补”状态逻辑，AI不会直接宣布匹配成功。</p>}
+      {!ready && <p>每次点击会运行“确认 / 拒绝 → 自动递补”状态逻辑</p>}
     </div>
 
     {scene === "offline" ? <section className={`venue-lock ${ready ? "ready" : ""}`}>
