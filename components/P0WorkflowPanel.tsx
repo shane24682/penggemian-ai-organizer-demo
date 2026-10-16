@@ -155,7 +155,7 @@ export default function P0WorkflowPanel({ initialTab = "invitations" }: { initia
   };
 
   return <div className={`workspace-view embedded-view ${styles.root}`}>
-    <header className={styles.heading}><div><small>P0 · PostgreSQL 真实共享数据</small><h2>数模工作台</h2><p>不同设备登录各自账号即可回应邀请</p></div></header>
+    <header className={styles.heading}><div><small>测试 · P0 · PostgreSQL 真实共享数据</small><h2>数模工作台</h2><p>不同设备登录各自账号即可回应邀请</p></div></header>
     {actionError && <p className={styles.error} role="alert">{actionError}</p>}
     {notice && <p className={styles.success} role="status">{notice}</p>}
     {token && <>
